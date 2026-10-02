@@ -1,0 +1,23 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.claude/worktrees/
+artifacts/
+var/
+var-*
+vendor/
+# pytest output redirections from shared-checkout sessions; never repo content
+.p*.txt
+# stale Codex worktree copies; never part of the repo
+.codex/
+# Python build artifacts and type-check caches; never repo content
+dist/
+build/
+*.egg-info/
+.mypy_cache/
+.pyre/
+.pytest_cache/
+.ruff_cache/
+# macOS dev artifact; never repo content
+.DS_Store

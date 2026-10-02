@@ -1,0 +1,501 @@
+{
+ "events": {
+  "error": [
+   "code",
+   "message",
+   "param",
+   "sequence_number",
+   "type"
+  ],
+  "response.audio.delta": [
+   "delta",
+   "sequence_number",
+   "type"
+  ],
+  "response.audio.done": [
+   "sequence_number",
+   "type"
+  ],
+  "response.audio.transcript.delta": [
+   "delta",
+   "sequence_number",
+   "type"
+  ],
+  "response.audio.transcript.done": [
+   "sequence_number",
+   "type"
+  ],
+  "response.code_interpreter_call.completed": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.code_interpreter_call.in_progress": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.code_interpreter_call.interpreting": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.code_interpreter_call_code.delta": [
+   "delta",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.code_interpreter_call_code.done": [
+   "code",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.completed": [
+   "response",
+   "sequence_number",
+   "type"
+  ],
+  "response.content_part.added": [
+   "content_index",
+   "item_id",
+   "output_index",
+   "part",
+   "sequence_number",
+   "type"
+  ],
+  "response.content_part.done": [
+   "content_index",
+   "item_id",
+   "output_index",
+   "part",
+   "sequence_number",
+   "type"
+  ],
+  "response.created": [
+   "response",
+   "sequence_number",
+   "type"
+  ],
+  "response.custom_tool_call_input.delta": [
+   "delta",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.custom_tool_call_input.done": [
+   "input",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.failed": [
+   "response",
+   "sequence_number",
+   "type"
+  ],
+  "response.file_search_call.completed": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.file_search_call.in_progress": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.file_search_call.searching": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.function_call_arguments.delta": [
+   "delta",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.function_call_arguments.done": [
+   "arguments",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.image_generation_call.completed": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.image_generation_call.generating": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.image_generation_call.in_progress": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.image_generation_call.partial_image": [
+   "background",
+   "item_id",
+   "output_format",
+   "output_index",
+   "partial_image_b64",
+   "partial_image_index",
+   "quality",
+   "sequence_number",
+   "size",
+   "type"
+  ],
+  "response.in_progress": [
+   "response",
+   "sequence_number",
+   "type"
+  ],
+  "response.incomplete": [
+   "response",
+   "sequence_number",
+   "type"
+  ],
+  "response.mcp_call.completed": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.mcp_call.failed": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.mcp_call.in_progress": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.mcp_call_arguments.delta": [
+   "delta",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.mcp_call_arguments.done": [
+   "arguments",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.mcp_list_tools.completed": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.mcp_list_tools.failed": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.mcp_list_tools.in_progress": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.output_item.added": [
+   "item",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.output_item.done": [
+   "item",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.output_text.annotation.added": [
+   "annotation",
+   "annotation_index",
+   "content_index",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.output_text.delta": [
+   "content_index",
+   "delta",
+   "item_id",
+   "logprobs",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.output_text.done": [
+   "content_index",
+   "item_id",
+   "logprobs",
+   "output_index",
+   "sequence_number",
+   "text",
+   "type"
+  ],
+  "response.queued": [
+   "response",
+   "sequence_number",
+   "type"
+  ],
+  "response.reasoning_summary_part.added": [
+   "item_id",
+   "output_index",
+   "part",
+   "sequence_number",
+   "summary_index",
+   "type"
+  ],
+  "response.reasoning_summary_part.done": [
+   "item_id",
+   "output_index",
+   "part",
+   "sequence_number",
+   "status",
+   "summary_index",
+   "type"
+  ],
+  "response.reasoning_summary_text.delta": [
+   "delta",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "summary_index",
+   "type"
+  ],
+  "response.reasoning_summary_text.done": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "summary_index",
+   "text",
+   "type"
+  ],
+  "response.reasoning_text.delta": [
+   "content_index",
+   "delta",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.reasoning_text.done": [
+   "content_index",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "text",
+   "type"
+  ],
+  "response.refusal.delta": [
+   "content_index",
+   "delta",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.refusal.done": [
+   "content_index",
+   "item_id",
+   "output_index",
+   "refusal",
+   "sequence_number",
+   "type"
+  ],
+  "response.shell_call_command.added": [
+   "command",
+   "command_index",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.shell_call_command.delta": [
+   "command_index",
+   "delta",
+   "obfuscation",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.shell_call_command.done": [
+   "command",
+   "command_index",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.shell_call_output_content.delta": [
+   "command_index",
+   "delta",
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.shell_call_output_content.done": [
+   "command_index",
+   "item_id",
+   "output",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.web_search_call.completed": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.web_search_call.in_progress": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ],
+  "response.web_search_call.searching": [
+   "item_id",
+   "output_index",
+   "sequence_number",
+   "type"
+  ]
+ },
+ "items": {
+  "compaction": [
+   "created_by",
+   "encrypted_content",
+   "id",
+   "type"
+  ],
+  "function_call": [
+   "arguments",
+   "async",
+   "call_id",
+   "caller",
+   "id",
+   "name",
+   "namespace",
+   "status",
+   "type"
+  ],
+  "image_generation_call": [
+   "action",
+   "background",
+   "id",
+   "output_format",
+   "quality",
+   "result",
+   "revised_prompt",
+   "size",
+   "status",
+   "type"
+  ],
+  "message": [
+   "content",
+   "id",
+   "phase",
+   "role",
+   "status",
+   "type"
+  ],
+  "reasoning": [
+   "content",
+   "encrypted_content",
+   "id",
+   "status",
+   "summary",
+   "type"
+  ],
+  "web_search_call": [
+   "action",
+   "id",
+   "status",
+   "type"
+  ]
+ },
+ "parts": {
+  "output_text": [
+   "annotations",
+   "logprobs",
+   "text",
+   "type"
+  ],
+  "reasoning_text": [
+   "text",
+   "type"
+  ],
+  "refusal": [
+   "refusal",
+   "type"
+  ]
+ },
+ "response": [
+  "background",
+  "completed_at",
+  "conversation",
+  "created_at",
+  "error",
+  "id",
+  "incomplete_details",
+  "instructions",
+  "max_output_tokens",
+  "max_tool_calls",
+  "metadata",
+  "model",
+  "moderation",
+  "object",
+  "output",
+  "output_text",
+  "parallel_tool_calls",
+  "previous_response_id",
+  "prompt",
+  "prompt_cache_diagnostics",
+  "prompt_cache_key",
+  "prompt_cache_options",
+  "prompt_cache_retention",
+  "reasoning",
+  "safety_identifier",
+  "service_tier",
+  "status",
+  "temperature",
+  "text",
+  "tool_choice",
+  "tools",
+  "top_logprobs",
+  "top_p",
+  "truncation",
+  "usage",
+  "user"
+ ],
+ "spec": "openai-openapi 4bb21ba (pinned)"
+}

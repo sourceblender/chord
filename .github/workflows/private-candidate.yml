@@ -1,0 +1,84 @@
+name: Private release candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Refuse a candidate from an unmerged branch
+        run: test "$GITHUB_REF" = refs/heads/main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: latest-known
+          python-version: "3.12"
+      - name: Bind the candidate to the exact public checkout
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/sourceblender/chord --jq .visibility)" = public || {
+            echo 'candidate workflow requires the public Chord repository'; exit 1;
+          }
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA" || {
+            echo 'checkout differs from the dispatched commit'; exit 1;
+          }
+          test -z "$(git status --porcelain --untracked-files=all)" || {
+            echo 'candidate checkout is not clean'; exit 1;
+          }
+          git rev-parse 'HEAD^{tree}' > "$RUNNER_TEMP/source-tree"
+      - name: Build and push only to the private candidate registry
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          image=ghcr.io/sourceblender/chord-candidates
+          tree=$(cat "$RUNNER_TEMP/source-tree")
+          # This package already exists and must stay private. Refuse an absent
+          # package or any API error before pushing; public repo visibility is
+          # never evidence that a newly created package would be private.
+          visibility=$(gh api orgs/sourceblender/packages/container/chord-candidates --jq .visibility)
+          test "$visibility" = private
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker buildx build --platform linux/amd64 --push \
+            --label "org.sourceblender.chord.source-tree=$tree" \
+            --label 'org.opencontainers.image.source=https://github.com/sourceblender/chord' \
+            --metadata-file "$RUNNER_TEMP/image-metadata.json" \
+            -t "$image:candidate-${{ github.sha }}" "$GITHUB_WORKSPACE"
+          python - "$RUNNER_TEMP/image-metadata.json" "$image" "$RUNNER_TEMP/candidate-image-ref" <<'PY'
+          import json, pathlib, re, sys
+          metadata = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          digest = metadata['containerimage.digest']
+          if not re.fullmatch(r'sha256:[0-9a-f]{64}', digest):
+              raise SystemExit('candidate build supplied no immutable digest')
+          pathlib.Path(sys.argv[3]).write_text(sys.argv[2] + '@' + digest)
+          PY
+          visibility=$(gh api orgs/sourceblender/packages/container/chord-candidates --jq .visibility)
+          test "$visibility" = private
+      - name: Verify the pushed bytes and issue the receipt
+        run: |
+          set -euo pipefail
+          image=$(cat "$RUNNER_TEMP/candidate-image-ref")
+          tree=$(cat "$RUNNER_TEMP/source-tree")
+          docker pull "$image"
+          wheel=$(python scripts/verify_candidate_image.py \
+            --image "$image" --source-tree "$tree" \
+            --wheel-dir "$RUNNER_TEMP/wheel" \
+            --verifier scripts/verify_runtime_wheel.py)
+          python scripts/release_receipt.py \
+            --export "$GITHUB_WORKSPACE" --wheel "$wheel" \
+            --image-digest "${image##*@}" \
+            --output "$RUNNER_TEMP/release-receipt.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: candidate-receipt-${{ github.sha }}
+          path: ${{ runner.temp }}/release-receipt.json
+          if-no-files-found: error
+          retention-days: 30

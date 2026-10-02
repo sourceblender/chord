@@ -1,0 +1,263 @@
+{
+  "spec_commit": "4bb21ba8e9213c3d955b69dc3f76dd7537439828",
+  "operations": {
+    "POST /chat/completions": {
+      "status": "supported",
+      "response_schema": "CreateChatCompletionResponse",
+      "stream_schema": "CreateChatCompletionStreamResponse"
+    },
+    "GET /models": {
+      "status": "supported",
+      "response_schema": "ListModelsResponse"
+    },
+    "POST /images/generations": {
+      "status": "experimental",
+      "response_schema": "ImagesResponse"
+    },
+    "POST /images/edits": {
+      "status": "experimental",
+      "response_schema": "ImagesResponse",
+      "reason": "one image plus a prompt through the operator's ComfyUI edit workflow; file_id or multipart; mask and image_url refused"
+    },
+    "POST /images/variations": {
+      "status": "experimental",
+      "response_schema": "ImagesResponse",
+      "reason": "n submits of the operator's ComfyUI variation workflow, one seed each; square PNG in, no caller prompt; dall-e-2 accepted as the spec's model name"
+    },
+    "POST /videos": {
+      "status": "experimental",
+      "response_schema": "VideoResource",
+      "reason": "the operator's ComfyUI t2v or r2v workflow; multipart image or a stored file_id; image_url refused"
+    },
+    "GET /videos": {
+      "status": "experimental",
+      "response_schema": "VideoListResource",
+      "reason": "rows on the data volume that have not passed expires_at"
+    },
+    "GET /videos/{video_id}": {
+      "status": "experimental",
+      "response_schema": "VideoResource"
+    },
+    "DELETE /videos/{video_id}": {
+      "status": "experimental",
+      "response_schema": "DeletedVideoResource",
+      "reason": "deletes the stored row and the MP4"
+    },
+    "GET /videos/{video_id}/content": {
+      "status": "experimental",
+      "response_schema": null,
+      "reason": "MP4 body"
+    },
+    "GET /models/{model}": {
+      "status": "supported",
+      "response_schema": "Model"
+    },
+    "DELETE /models/{model}": {
+      "status": "supported",
+      "reason": "served as a documented no-op: nothing here is a fine-tune, so `deleted` is always false, for any id (decision 2026-09-17 \u2014 a harness walking the Models API should not break on it). It cannot delete anything; that is pinned by test_delete_never_deletes_anything",
+      "response_schema": "DeleteModelResponse"
+    },
+    "POST /moderations": {
+      "status": "supported",
+      "reason": "served and spec-shaped, and it classifies nothing: every result is flagged=false with zero scores (decision 2026-09-18 \u2014 build the route, decide nothing, document it so nobody believes it works). The real gate is #121, required before any external user.",
+      "response_schema": "CreateModerationResponse"
+    },
+    "POST /completions": {
+      "status": "supported",
+      "response_schema": "CreateCompletionResponse"
+    },
+    "POST /audio/speech": {
+      "status": "supported",
+      "response_schema": null,
+      "reason": "binary audio body (application/octet-stream in the spec); non-streaming only; mp3|opus|flac|wav|pcm, speed 1.0, configured voices (#139)"
+    },
+    "POST /audio/transcriptions": {
+      "status": "supported",
+      "response_schema": "CreateTranscriptionResponseJson",
+      "reason": "non-streaming; response_format json|text; wav|mp3|flac|ogg by bytes (#139)"
+    },
+    "POST /responses": {
+      "status": "supported",
+      "response_schema": "Response",
+      "stream_schema": "ResponseStreamEvent",
+      "reason": "over the Chat core; function, web_search and image_generation tools; store default true; background (non-stream) with retrieve/cancel; prompt/include refused (#146)"
+    },
+    "GET /responses/{response_id}": {
+      "status": "supported",
+      "response_schema": "Response",
+      "reason": "stored responses, 30-day retention; stream replay refused (#146)"
+    },
+    "DELETE /responses/{response_id}": {
+      "status": "supported",
+      "response_schema": null,
+      "reason": "real row delete (#146)"
+    },
+    "GET /responses/{response_id}/input_items": {
+      "status": "supported",
+      "response_schema": "ResponseItemList",
+      "reason": "limit/order/after; include refused (#146)"
+    },
+    "POST /conversations": {
+      "status": "supported",
+      "response_schema": "ConversationResource",
+      "reason": "items (message, function_call, function_call_output; max 20) and metadata (Phase 4, #146/#142)"
+    },
+    "GET /conversations/{conversation_id}": {
+      "status": "supported",
+      "response_schema": "ConversationResource",
+      "reason": "kept until deleted (Phase 4, #146/#142)"
+    },
+    "POST /conversations/{conversation_id}": {
+      "status": "supported",
+      "response_schema": "ConversationResource",
+      "reason": "metadata update (Phase 4, #146/#142)"
+    },
+    "DELETE /conversations/{conversation_id}": {
+      "status": "supported",
+      "response_schema": "DeletedConversationResource",
+      "reason": "deletes the conversation and its items (Phase 4, #146/#142)"
+    },
+    "POST /conversations/{conversation_id}/items": {
+      "status": "supported",
+      "response_schema": "ConversationItemList",
+      "reason": "append; include refused (Phase 4, #146/#142)"
+    },
+    "GET /conversations/{conversation_id}/items": {
+      "status": "supported",
+      "response_schema": "ConversationItemList",
+      "reason": "limit/order/after; include refused (Phase 4, #146/#142)"
+    },
+    "GET /conversations/{conversation_id}/items/{item_id}": {
+      "status": "supported",
+      "response_schema": "ConversationItem",
+      "reason": "include refused (Phase 4, #146/#142)"
+    },
+    "DELETE /conversations/{conversation_id}/items/{item_id}": {
+      "status": "supported",
+      "response_schema": "ConversationResource",
+      "reason": "real row delete (Phase 4, #146/#142)"
+    },
+    "GET /chat/completions": {
+      "status": "supported",
+      "response_schema": "ChatCompletionList",
+      "reason": "model and metadata filters, after/limit/order (S13e)"
+    },
+    "GET /chat/completions/{completion_id}": {
+      "status": "supported",
+      "response_schema": "CreateChatCompletionResponse",
+      "reason": "stored with store:true (S13e)"
+    },
+    "POST /chat/completions/{completion_id}": {
+      "status": "supported",
+      "response_schema": "CreateChatCompletionResponse",
+      "reason": "metadata update (S13e)"
+    },
+    "DELETE /chat/completions/{completion_id}": {
+      "status": "supported",
+      "response_schema": "ChatCompletionDeleted",
+      "reason": "real row delete (S13e)"
+    },
+    "GET /chat/completions/{completion_id}/messages": {
+      "status": "supported",
+      "response_schema": "ChatCompletionMessageList",
+      "reason": "the request's messages, after/limit/order (S13e)"
+    },
+    "POST /responses/{response_id}/cancel": {
+      "status": "supported",
+      "response_schema": "Response",
+      "reason": "background responses only; idempotent on terminal status"
+    },
+    "POST /responses/input_tokens": {
+      "status": "supported",
+      "response_schema": "TokenCountsResource",
+      "reason": "exact count from the model's usage for a one-token prefill; personality refused"
+    },
+    "POST /responses/compact": {
+      "status": "supported",
+      "response_schema": "CompactResource",
+      "reason": "configured-model summary in one compaction item; encrypted_content is signed, not encrypted"
+    },
+    "POST /responses?beta=true": {
+      "status": "supported",
+      "response_schema": "BetaResponse",
+      "stream_schema": "BetaResponseStreamEvent",
+      "reason": "the same handler as POST /responses; ?beta=true changes nothing (tests/test_responses_beta_aliases.py)"
+    },
+    "GET /responses/{response_id}?beta=true": {
+      "status": "supported",
+      "response_schema": "BetaResponse",
+      "reason": "the same handler as GET /responses/{response_id}; ?beta=true changes nothing (tests/test_responses_beta_aliases.py)"
+    },
+    "DELETE /responses/{response_id}?beta=true": {
+      "status": "supported",
+      "response_schema": null,
+      "reason": "the same handler as DELETE /responses/{response_id}; ?beta=true changes nothing (tests/test_responses_beta_aliases.py)"
+    },
+    "POST /responses/{response_id}/cancel?beta=true": {
+      "status": "supported",
+      "response_schema": "BetaResponse",
+      "reason": "the same handler as POST /responses/{response_id}/cancel; ?beta=true changes nothing (tests/test_responses_beta_aliases.py)"
+    },
+    "POST /responses/compact?beta=true": {
+      "status": "supported",
+      "response_schema": "BetaCompactResource",
+      "reason": "the same handler as POST /responses/compact; ?beta=true changes nothing (tests/test_responses_beta_aliases.py)"
+    },
+    "GET /responses/{response_id}/input_items?beta=true": {
+      "status": "supported",
+      "response_schema": "BetaResponseItemList",
+      "reason": "the same handler as GET /responses/{response_id}/input_items; ?beta=true changes nothing (tests/test_responses_beta_aliases.py)"
+    },
+    "POST /responses/input_tokens?beta=true": {
+      "status": "supported",
+      "response_schema": "BetaTokenCountsResource",
+      "reason": "the same handler as POST /responses/input_tokens; ?beta=true changes nothing (tests/test_responses_beta_aliases.py)"
+    },
+    "POST /audio/translations": {
+      "status": "supported",
+      "response_schema": "CreateTranslationResponseJson",
+      "reason": "transcribe with the configured STT, then translate to English with the chat model; json|text"
+    },
+    "POST /files": {
+      "status": "supported",
+      "response_schema": "OpenAIFile",
+      "reason": "storage only (files_api.py): bytes on the data volume, batch files expire after 30 days, others kept until deleted; tests/test_files_api.py; purpose evals refused (not representable in OpenAIFile, out of scope #142)"
+    },
+    "GET /files": {
+      "status": "supported",
+      "response_schema": "ListFilesResponse",
+      "reason": "storage only (files_api.py): bytes on the data volume, batch files expire after 30 days, others kept until deleted; tests/test_files_api.py"
+    },
+    "GET /files/{file_id}": {
+      "status": "supported",
+      "response_schema": "OpenAIFile",
+      "reason": "storage only (files_api.py): bytes on the data volume, batch files expire after 30 days, others kept until deleted; tests/test_files_api.py"
+    },
+    "DELETE /files/{file_id}": {
+      "status": "supported",
+      "response_schema": "DeleteFileResponse",
+      "reason": "storage only (files_api.py): bytes on the data volume, batch files expire after 30 days, others kept until deleted; tests/test_files_api.py; a real delete of the row and the bytes"
+    },
+    "GET /files/{file_id}/content": {
+      "status": "supported",
+      "response_schema": null,
+      "reason": "storage only (files_api.py): bytes on the data volume, batch files expire after 30 days, others kept until deleted; tests/test_files_api.py; raw bytes, application/octet-stream"
+    },
+    "POST /embeddings": {
+      "status": "supported",
+      "reason": "served by the configured embeddings backend; required model and string/string-array input are validated, token-array input is refused by name because token ids are tokenizer-specific, and output batch indexes, vectors, and usage are checked before returning",
+      "response_schema": "CreateEmbeddingResponse"
+    }
+  },
+  "extensions": {
+    "GET /artifacts/{artifact_id}": {
+      "status": "supported-extension",
+      "reason": "Chord artifact retrieval; not an OpenAI operation"
+    },
+    "GET /health": {
+      "status": "supported-extension",
+      "reason": "Chord deployment readback; not an OpenAI operation"
+    }
+  },
+  "unlisted_openai_operations": "unimplemented"
+}

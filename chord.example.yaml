@@ -1,0 +1,18 @@
+# Copy to chord.yaml and set CHORD_CONFIG=./chord.yaml. Validate with
+# `python -m chord --check-config`, or inspect selected routes with
+# `python -m chord --show-config` (URL origins only; credentials omitted).
+# Server settings (ports, storage and client keys) remain environment
+# variables for now.
+# This example uses one OpenAI-compatible backend for text chat and routing.
+version: 1
+endpoints:
+  chat:
+    type: openai-chat
+    url: http://127.0.0.1:11434/v1
+    model: llama3.1
+    auth: null
+    thinking: passthrough
+    json_mode: false
+routing:
+  chat: {endpoint: chat}
+  router: {endpoint: chat}

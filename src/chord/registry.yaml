@@ -1,0 +1,26 @@
+# Known specialist routes. The public text-only profile has no certified
+# specialist backend; deployments supply their own registry when they add one.
+capabilities:
+  - id: image
+    description: make a picture
+    model: none
+    prompt: image.md
+    tools: [comfyui.render]
+    certified: null
+  - id: audio
+    description: say something out loud
+    model: none
+    prompt: audio.md
+    tools: [tts.speak]
+    certified: null
+  - id: search
+    description: look something up on the web
+    model: none
+    prompt: search.md
+    tools: [web.search]
+    certified: null
+  - id: video
+    description: make a video
+    model: none
+    prompt: video.md
+    certified: null

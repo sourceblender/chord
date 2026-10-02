@@ -1,0 +1,1176 @@
+{
+  "_note": "Synthetic extension profile derived from a retired deployment profile for conformance-validator tests. Paths and schemas preserve the test cases; reasons are generic examples, not current service claims.",
+  "response_extensions": [
+    {
+      "path": "$.choices[*].message.outcome",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service turn outcome",
+      "schema": {
+        "type": "string",
+        "enum": [
+          "chat",
+          "completed",
+          "needs_clarification",
+          "failed",
+          "cancelled"
+        ]
+      }
+    },
+    {
+      "path": "$.choices[*].message.trace_id",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service trace id; an upstream proxy strips an x-example-trace-id header",
+      "schema": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "path": "$.choices[*].message.artifacts",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "type",
+            "mime",
+            "sha256"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "mime": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "path": "$.choices[*].message.artifacts[*].id",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made"
+    },
+    {
+      "path": "$.choices[*].message.artifacts[*].type",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made"
+    },
+    {
+      "path": "$.choices[*].message.artifacts[*].mime",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made"
+    },
+    {
+      "path": "$.choices[*].message.artifacts[*].sha256",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made"
+    },
+    {
+      "path": "$.choices[*].message.job",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service specialist job identity",
+      "schema": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "revision",
+          "specialist"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "specialist": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "path": "$.choices[*].message.job.job_id",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service specialist job identity"
+    },
+    {
+      "path": "$.choices[*].message.job.revision",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service specialist job identity"
+    },
+    {
+      "path": "$.choices[*].message.job.specialist",
+      "modes": [
+        "chat"
+      ],
+      "reason": "Example service specialist job identity"
+    },
+    {
+      "path": "$.choices[*].message.images",
+      "modes": [
+        "chat"
+      ],
+      "reason": "generated images as data URIs (the example extension profile)",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "type",
+            "image_url"
+          ],
+          "properties": {
+            "type": {
+              "const": "image_url"
+            },
+            "image_url": {
+              "type": "object",
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "path": "$.choices[*].message.images[*].type",
+      "modes": [
+        "chat"
+      ],
+      "reason": "generated images as data URIs (the example extension profile)"
+    },
+    {
+      "path": "$.choices[*].message.images[*].image_url",
+      "modes": [
+        "chat"
+      ],
+      "reason": "generated images as data URIs (the example extension profile)"
+    },
+    {
+      "path": "$.choices[*].message.images[*].image_url.url",
+      "modes": [
+        "chat"
+      ],
+      "reason": "generated images as data URIs (the example extension profile)"
+    },
+    {
+      "path": "$.choices[*].message.image",
+      "modes": [
+        "chat"
+      ],
+      "reason": "first image, singular, for clients that read .image",
+      "schema": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "path": "$.choices[*].message.image.url",
+      "modes": [
+        "chat"
+      ],
+      "reason": "first image, singular, for clients that read .image"
+    },
+    {
+      "path": "$.choices[*].message.image.detail",
+      "modes": [
+        "chat"
+      ],
+      "reason": "first image, singular, for clients that read .image"
+    },
+    {
+      "path": "$.choices[*].message.audio_failed",
+      "modes": [
+        "chat"
+      ],
+      "reason": "TTS failed; the generated words still went out as text",
+      "schema": {
+        "const": true
+      }
+    },
+    {
+      "path": "$.choices[*].message.reasoning_content",
+      "modes": [
+        "chat"
+      ],
+      "reason": "example reasoning field, returned only when the request explicitly enables reasoning",
+      "schema": {
+        "type": "string"
+      }
+    },
+    {
+      "path": "$.choices[*].delta.outcome",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service turn outcome",
+      "schema": {
+        "type": "string",
+        "enum": [
+          "chat",
+          "completed",
+          "needs_clarification",
+          "failed",
+          "cancelled"
+        ]
+      }
+    },
+    {
+      "path": "$.choices[*].delta.trace_id",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service trace id; an upstream proxy strips an x-example-trace-id header",
+      "schema": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "path": "$.choices[*].delta.artifacts",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "type",
+            "mime",
+            "sha256"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "mime": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "path": "$.choices[*].delta.artifacts[*].id",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made"
+    },
+    {
+      "path": "$.choices[*].delta.artifacts[*].type",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made"
+    },
+    {
+      "path": "$.choices[*].delta.artifacts[*].mime",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made"
+    },
+    {
+      "path": "$.choices[*].delta.artifacts[*].sha256",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made"
+    },
+    {
+      "path": "$.choices[*].delta.job",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity",
+      "schema": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "revision",
+          "specialist"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "specialist": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "path": "$.choices[*].delta.job.job_id",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity"
+    },
+    {
+      "path": "$.choices[*].delta.job.revision",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity"
+    },
+    {
+      "path": "$.choices[*].delta.job.specialist",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity"
+    },
+    {
+      "path": "$.choices[*].delta.images",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile)",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "type",
+            "image_url"
+          ],
+          "properties": {
+            "type": {
+              "const": "image_url"
+            },
+            "image_url": {
+              "type": "object",
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "path": "$.choices[*].delta.images[*].type",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile)"
+    },
+    {
+      "path": "$.choices[*].delta.images[*].image_url",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile)"
+    },
+    {
+      "path": "$.choices[*].delta.images[*].image_url.url",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile)"
+    },
+    {
+      "path": "$.choices[*].delta.image",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "first image, singular, for clients that read .image",
+      "schema": {
+        "type": "object",
+        "required": [
+          "url"
+        ],
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "path": "$.choices[*].delta.image.url",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "first image, singular, for clients that read .image"
+    },
+    {
+      "path": "$.choices[*].delta.image.detail",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "first image, singular, for clients that read .image"
+    },
+    {
+      "path": "$.choices[*].delta.annotations",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "streamed url_citation annotations; the spec declares annotations on the message only",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "type",
+            "url_citation"
+          ],
+          "properties": {
+            "type": {
+              "const": "url_citation"
+            },
+            "url_citation": {
+              "type": "object",
+              "required": [
+                "url",
+                "title",
+                "start_index",
+                "end_index"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "start_index": {
+                  "type": "integer"
+                },
+                "end_index": {
+                  "type": "integer"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "path": "$.choices[*].delta.annotations[*].type",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "streamed url_citation annotations; the spec declares annotations on the message only"
+    },
+    {
+      "path": "$.choices[*].delta.annotations[*].url_citation",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "streamed url_citation annotations; the spec declares annotations on the message only"
+    },
+    {
+      "path": "$.choices[*].delta.annotations[*].url_citation.url",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "streamed url_citation annotations; the spec declares annotations on the message only"
+    },
+    {
+      "path": "$.choices[*].delta.annotations[*].url_citation.title",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "streamed url_citation annotations; the spec declares annotations on the message only"
+    },
+    {
+      "path": "$.choices[*].delta.annotations[*].url_citation.start_index",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "streamed url_citation annotations; the spec declares annotations on the message only"
+    },
+    {
+      "path": "$.choices[*].delta.annotations[*].url_citation.end_index",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "streamed url_citation annotations; the spec declares annotations on the message only"
+    },
+    {
+      "path": "$.choices[*].delta.reasoning_content",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "example reasoning field, returned only when the request explicitly enables reasoning",
+      "schema": {
+        "type": "string"
+      }
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "copy of the Example service extension that survives an upstream proxy stream parsing",
+      "schema": {
+        "type": "object"
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.outcome",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service turn outcome (transport copy)",
+      "schema": {
+        "type": "string",
+        "enum": [
+          "chat",
+          "completed",
+          "needs_clarification",
+          "failed",
+          "cancelled"
+        ]
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.trace_id",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service trace id; an upstream proxy strips an x-example-trace-id header (transport copy)",
+      "schema": {
+        "type": "string",
+        "minLength": 1
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.artifacts",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made (transport copy)",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "type",
+            "mime",
+            "sha256"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "mime": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.artifacts[*].id",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.artifacts[*].type",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.artifacts[*].mime",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.artifacts[*].sha256",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.job",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity (transport copy)",
+      "schema": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "revision",
+          "specialist"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "specialist": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.job.job_id",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.job.revision",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.job.specialist",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.images",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile) (transport copy)",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "type",
+            "image_url"
+          ],
+          "properties": {
+            "type": {
+              "const": "image_url"
+            },
+            "image_url": {
+              "type": "object",
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.images[*].type",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile) (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.images[*].image_url",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile) (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.images[*].image_url.url",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile) (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "copy of the Example service extension that survives an upstream proxy stream parsing",
+      "schema": {
+        "type": "object"
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.outcome",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service turn outcome (transport copy)",
+      "schema": {
+        "type": "string",
+        "enum": [
+          "chat",
+          "completed",
+          "needs_clarification",
+          "failed",
+          "cancelled"
+        ]
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.trace_id",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service trace id; an upstream proxy strips an x-example-trace-id header (transport copy)",
+      "schema": {
+        "type": "string",
+        "minLength": 1
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.artifacts",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made (transport copy)",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "id",
+            "type",
+            "mime",
+            "sha256"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string"
+            },
+            "mime": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.artifacts[*].id",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.artifacts[*].type",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.artifacts[*].mime",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.artifacts[*].sha256",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service artifact descriptors for anything the turn made (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.job",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity (transport copy)",
+      "schema": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "revision",
+          "specialist"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "specialist": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.job.job_id",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.job.revision",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.job.specialist",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Example service specialist job identity (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.images",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile) (transport copy)",
+      "schema": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "type",
+            "image_url"
+          ],
+          "properties": {
+            "type": {
+              "const": "image_url"
+            },
+            "image_url": {
+              "type": "object",
+              "required": [
+                "url"
+              ],
+              "properties": {
+                "url": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.images[*].type",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile) (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.images[*].image_url",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile) (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.provider_specific_fields.images[*].image_url.url",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "generated images as data URIs (the example extension profile) (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.progress",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "example progress marker carried through an upstream proxy: ongoing {capability, stage} or closing {done: true}",
+      "schema": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "capability",
+              "stage"
+            ],
+            "properties": {
+              "capability": {
+                "type": "string",
+                "minLength": 1
+              },
+              "stage": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": [
+              "done"
+            ],
+            "properties": {
+              "done": {
+                "const": true
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.progress.capability",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "progress marker that carries the status chunk through an upstream proxy (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.progress.stage",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "progress marker that carries the status chunk through an upstream proxy (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.choices[*].delta.provider_specific_fields.progress.done",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "progress marker that carries the status chunk through an upstream proxy (transport copy)",
+      "debt": "transport"
+    },
+    {
+      "path": "$.event",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Open WebUI status event for specialist progress (PROGRESS_STYLE=status)",
+      "schema": {
+        "type": "object",
+        "required": [
+          "type",
+          "data"
+        ],
+        "properties": {
+          "type": {
+            "const": "status"
+          },
+          "data": {
+            "type": "object",
+            "required": [
+              "description",
+              "done"
+            ],
+            "properties": {
+              "description": {
+                "type": "string"
+              },
+              "done": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "path": "$.event.type",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Open WebUI status event for specialist progress (PROGRESS_STYLE=status)"
+    },
+    {
+      "path": "$.event.data",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Open WebUI status event for specialist progress (PROGRESS_STYLE=status)"
+    },
+    {
+      "path": "$.event.data.description",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Open WebUI status event for specialist progress (PROGRESS_STYLE=status)"
+    },
+    {
+      "path": "$.event.data.done",
+      "modes": [
+        "chat-stream"
+      ],
+      "reason": "Open WebUI status event for specialist progress (PROGRESS_STYLE=status)"
+    },
+    {
+      "path": "$.trace_id",
+      "modes": [
+        "images"
+      ],
+      "reason": "Example service trace id; an upstream proxy strips an x-example-trace-id header",
+      "schema": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    {
+      "path": "$.trace_id",
+      "modes": [
+        "error"
+      ],
+      "reason": "Example service trace id; an upstream proxy strips an x-example-trace-id header",
+      "schema": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  ]
+}

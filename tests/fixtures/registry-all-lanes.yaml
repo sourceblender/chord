@@ -1,0 +1,25 @@
+# Test-only registry paired with manifest-all-lanes.yaml; model names are placeholders.
+capabilities:
+  - id: image
+    description: make a picture — a selfie, a scene, a photo of her
+    model: example-vision-model
+    prompt: image.md
+    tools: [comfyui.render]
+    certified: null
+  - id: audio
+    description: say something out loud as a voice message
+    model: example-tts-model
+    prompt: audio.md
+    tools: [tts.speak]
+    certified: null
+  - id: search
+    description: look something up on the web — news, current events, facts she wouldn't know
+    model: example-chat-model
+    prompt: search.md
+    tools: [web.search]
+    certified: null
+  - id: video
+    description: make a video, an animation, an animated GIF or any moving clip
+    model: none
+    prompt: video.md
+    certified: null

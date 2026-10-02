@@ -1,0 +1,71 @@
+# Test-only manifest with every lane on, for exercising media validation and
+# routing without a private deployment. The conftest selects it when the
+# operator's manifest is absent (for example in a public export). It certifies
+# nothing about any deployment.
+release: test-all-lanes
+experimental: [image_generation, web_search]
+persona: layered
+
+input:
+  text: true
+  image: true
+  audio: true
+output:
+  text: true
+  image: true
+  audio: true
+
+features:
+  streaming: true
+  thinking_default: off
+  reasoning: true
+  function_calling: true
+  response_schema: true
+  system_messages: true
+  web_search: true
+
+limits:
+  max_input_tokens: 113664
+  max_output_tokens: 16384
+
+supported_openai_params:
+  - max_tokens
+  - max_completion_tokens
+  - temperature
+  - top_p
+  - stop
+  - seed
+  - stream
+  - stream_options
+  - tools
+  - tool_choice
+  - response_format
+  - reasoning_effort
+  - service_tier
+  - audio
+  - web_search_options
+  - metadata
+
+refused_params: [moderation, prediction]
+declared_noop_params: [user, safety_identifier, prompt_cache_key, prompt_cache_options, prompt_cache_retention]
+extension_params: [chat_template_kwargs]
+
+service_tier_routes:
+  auto:     {slot: persona, echo: default}
+  default:  {slot: persona, echo: default}
+  flex:     {slot: persona, echo: default}
+  scale:    {slot: persona, echo: default}
+  fast:     {slot: router,  echo: priority}
+  priority: {slot: router,  echo: priority}
+
+
+response_extensions:
+  - {"path": "$.choices[*].message.reasoning_content", "modes": ["chat"], "reason": "model reasoning, passed through ONLY when the request sets chat_template_kwargs.enable_thinking: true (chat_wire._drop_reasoning)", "schema": {"type": "string"}}
+  - {"path": "$.choices[*].delta.annotations", "modes": ["chat-stream"], "reason": "streamed url_citation annotations; the spec declares annotations on the message only", "schema": {"type": "array", "items": {"type": "object", "required": ["type", "url_citation"], "properties": {"type": {"const": "url_citation"}, "url_citation": {"type": "object", "required": ["url", "title", "start_index", "end_index"], "properties": {"url": {"type": "string"}, "title": {"type": "string"}, "start_index": {"type": "integer"}, "end_index": {"type": "integer"}}, "additionalProperties": false}}, "additionalProperties": false}}}
+  - {"path": "$.choices[*].delta.annotations[*].type", "modes": ["chat-stream"], "reason": "streamed url_citation annotations; the spec declares annotations on the message only"}
+  - {"path": "$.choices[*].delta.annotations[*].url_citation", "modes": ["chat-stream"], "reason": "streamed url_citation annotations; the spec declares annotations on the message only"}
+  - {"path": "$.choices[*].delta.annotations[*].url_citation.url", "modes": ["chat-stream"], "reason": "streamed url_citation annotations; the spec declares annotations on the message only"}
+  - {"path": "$.choices[*].delta.annotations[*].url_citation.title", "modes": ["chat-stream"], "reason": "streamed url_citation annotations; the spec declares annotations on the message only"}
+  - {"path": "$.choices[*].delta.annotations[*].url_citation.start_index", "modes": ["chat-stream"], "reason": "streamed url_citation annotations; the spec declares annotations on the message only"}
+  - {"path": "$.choices[*].delta.annotations[*].url_citation.end_index", "modes": ["chat-stream"], "reason": "streamed url_citation annotations; the spec declares annotations on the message only"}
+  - {"path": "$.choices[*].delta.reasoning_content", "modes": ["chat-stream"], "reason": "model reasoning, passed through ONLY when the request sets chat_template_kwargs.enable_thinking: true (chat_wire._drop_reasoning)", "schema": {"type": "string"}}

@@ -1,0 +1,151 @@
+[project]
+name = "chord"
+license = "Apache-2.0"
+version = "0.1.0"
+description = "An OpenAI-compatible virtual model service with evidence-backed conformance gates"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # Starlette 1.6.0 still imports anyio.abc.BlockingPortal, which AnyIO 4.11+
+    # retains only as a deprecated alias (Starlette #3497/#3498). The fix is on
+    # Starlette main but not in a release as of 2026-09-21. Keep the newest
+    # warning-free AnyIO until a released Starlette passes the isolated gate.
+    "anyio>=4.14.2,<4.15",
+    "fastapi>=0.141.1",
+    "httpx>=0.28.1",
+    # Runtime, not dev, per the 2026-09-19 decision: the sole-tool repair binds an
+    # undeclared call to the one declared tool ONLY when the model's raw arguments
+    # already validate against that tool's schema. That is full JSON Schema validation,
+    # and the service had none -- `_conform()` enforces one keyword by hand. A
+    # hand-rolled subset was rejected in writing: a partial validator accepts what a real
+    # one refuses, so the bind would look licensed when it is not, which is the evidence
+    # boundary failing one layer down. Draft202012Validator, checked at request time, no
+    # remote $ref resolution.
+    "jsonschema>=4.25",
+    "langchain>=1.4.0",
+    "langchain-openai>=1.6.2",
+    "langgraph>=1.2.11",
+    "pillow>=11",
+    "pydantic>=2.13.5",
+    "python-multipart>=0.0.32",
+    "python-ulid>=4.0.1",
+    "pyyaml>=6.0.3",
+    "uvicorn[standard]>=0.52.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.12,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+# The distribution, import package, repository, and service share one identity.
+module-name = "chord"
+
+[dependency-groups]
+dev = [
+    "pyright==1.1.414",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "ruff==0.16.8",
+]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+# Start with correctness rules that can gate the existing tree without a
+# formatting migration. The selected surface and rule set may only expand.
+select = ["E4", "E7", "E9", "F"]
+
+[tool.pyright]
+# The type-checked boundary grows only forward: a module enters when it is
+# clean and stays in. As of the 2026-09-22 debt pass it covers EVERY module
+# in src/chord -- the 89-error backlog (measured that day; none of them a
+# live bug, two verified near-misses) is retired, and the review findings
+# that landed in unchecked modules are the recorded reason the list grew.
+# graph.py's TurnState is two-tiered -- required
+# keys for what the doors guarantee, optional for what nodes fill in -- and
+# reads of edge-guaranteed keys assert the edge.
+include = [
+    "src/chord/__init__.py",
+    "src/chord/__main__.py",
+    "src/chord/api_errors.py",
+    "src/chord/app_core.py",
+    "src/chord/artifact_links.py",
+    "src/chord/artifacts.py",
+    "src/chord/audio.py",
+    "src/chord/audio_api.py",
+    "src/chord/backend_preflight.py",
+    "src/chord/chat_api.py",
+    "src/chord/chat_contract.py",
+    "src/chord/chat_wire.py",
+    "src/chord/client_admission.py",
+    "src/chord/client_keys.py",
+    "src/chord/comfy.py",
+    "src/chord/comfy_preflight.py",
+    "src/chord/comfy_workflow.py",
+    "src/chord/comfy_video_workflow.py",
+    "src/chord/completions_api.py",
+    "src/chord/config.py",
+    "src/chord/contract.py",
+    "src/chord/dependencies.py",
+    "src/chord/embeddings.py",
+    "src/chord/files_api.py",
+    "src/chord/fingerprint.py",
+    "src/chord/forced_call.py",
+    "src/chord/graph.py",
+    "src/chord/http_transport.py",
+    "src/chord/image_caption.py",
+    "src/chord/images_api.py",
+    "src/chord/internal_api.py",
+    "src/chord/manifest.py",
+    "src/chord/models_api.py",
+    "src/chord/moderation.py",
+    "src/chord/moderations.py",
+    "src/chord/normalize.py",
+    "src/chord/progress.py",
+    "src/chord/progress_replay.py",
+    "src/chord/registry.py",
+    "src/chord/render_admission.py",
+    "src/chord/responses.py",
+    "src/chord/responses_store.py",
+    "src/chord/retention.py",
+    "src/chord/router.py",
+    "src/chord/server.py",
+    "src/chord/specialists/__init__.py",
+    "src/chord/specialists/image.py",
+    "src/chord/specialists/search.py",
+    "src/chord/specialists/voice_message.py",
+    "src/chord/store_schema.py",
+    "src/chord/stored_chat.py",
+    "src/chord/system_api.py",
+    "src/chord/trace.py",
+    "src/chord/upstream.py",
+    "src/chord/video.py",
+    "src/chord/videos.py",
+    "src/chord/voice_clip.py",
+    "src/chord/web_search.py",
+    "qa/conformance/profile.py",
+]
+pythonVersion = "3.12"
+typeCheckingMode = "standard"
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+# An unhandled exception in a background thread must FAIL the suite, not merely
+# warn where nobody reads it (batch-4 review). Moving work off the event
+# loop quietly empties the tests that measured the loop: the hollow retention
+# test was discoverable only through a PytestUnhandledThreadExceptionWarning.
+# Promoting that warning to an error makes the mechanism itself the guard, so
+# the next offload cannot drain a test's meaning in silence.
+filterwarnings = [
+    "error::pytest.PytestUnhandledThreadExceptionWarning",
+]
+# Preserved evidence carries its own verifier commands and is never a
+# current-source test root. Explicit roots make that boundary closed by
+# default: a new historical `test_*.py` cannot silently join the release gate.
+testpaths = [
+    "tests",
+    "qa",
+]

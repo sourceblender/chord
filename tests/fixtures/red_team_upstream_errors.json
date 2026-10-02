@@ -1,0 +1,14 @@
+{
+ "S-cf-071": {
+  "status": 400,
+  "body": "{\"error\":{\"message\":\"litellm.BadRequestError: OpenAIException - temperature must be in [0, 2], got 3.0. (parameter=temperature, value=3.0)No fallback model group found for original model_group=example/chat. Fallbacks=[]. Received Model Group=example/chat\\nAvailable Model Group Fallbacks=None\\nError doing the fallback: litellm.BadRequestError: OpenAIException - temperature must be in [0, 2], got 3.0. (parameter=temperature, value=3.0)No fallback model group found for original model_group=example/chat. Fallbacks=[]\",\"type\":null,\"param\":null,\"code\":\"400\"}}"
+ },
+ "S-cf-072": {
+  "status": 400,
+  "body": "{\"error\":{\"message\":\"litellm.BadRequestError: OpenAIException - max_tokens must be at least 1, got 0. (parameter=max_tokens, value=0)No fallback model group found for original model_group=example/chat. Fallbacks=[]. Received Model Group=example/chat\\nAvailable Model Group Fallbacks=None\\nError doing the fallback: litellm.BadRequestError: OpenAIException - max_tokens must be at least 1, got 0. (parameter=max_tokens, value=0)No fallback model group found for original model_group=example/chat. Fallbacks=[]\",\"type\":null,\"param\":null,\"code\":\"400\"}}"
+ },
+ "S-cf-086": {
+  "status": 400,
+  "body": "{\"error\":{\"message\":\"litellm.ContextWindowExceededError: litellm.BadRequestError: ContextWindowExceededError: OpenAIException - This model's maximum context length is 131072 tokens. However, you requested 0 output tokens and your prompt contains at least 131073 input tokens, for a total of at least 131073 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=131073)\\nmodel=example/chat. context_window_fallbacks=None. fallbacks=[].\\n\\nSet 'context_window_fallback' - https://docs.litellm.ai/docs/routing#fallbacksNo fallback model group found for original model_group=example/chat. Fallbacks=[]. Received Model Group=example/chat\\nAvailable Model Group Fallbacks=None\\nError doing the fallback: litellm.ContextWindowExceededError: litellm.BadRequestError: ContextWindowExceededError: OpenAIException - This model's maximum context length is 131072 tokens. However, you requested 0 output tokens and your prompt contains at least 131073 input tokens, for a total of at least 131073 tokens. Please reduce the length of the input prompt or the number of requested output tokens. (parameter=input_tokens, value=131073)\\nmodel=example/chat. context_window_fallbacks=None. fallbacks=[].\\n\\nSet 'context_window_fallback' - https://docs.litellm.ai/docs/routing#fallbacksNo fallback model group found for original model_group=example/chat. Fallbacks=[]\",\"type\":null,\"param\":null,\"code\":\"400\"}}"
+ }
+}

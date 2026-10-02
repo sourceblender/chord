@@ -1,0 +1,66 @@
+# Conservative default: text only until an operator configures and verifies more.
+release: text-only
+experimental:
+- image_generation
+- web_search
+persona: layered
+input:
+  text: true
+  image: false
+  audio: false
+output:
+  text: true
+  image: false
+  audio: false
+features:
+  streaming: false
+  thinking_default: 'off'
+  reasoning: false
+  function_calling: false
+  response_schema: false
+  system_messages: true
+  web_search: false
+limits:
+  max_input_tokens: null
+  max_output_tokens: null
+supported_openai_params:
+- max_tokens
+- max_completion_tokens
+- temperature
+- top_p
+- stop
+- seed
+- stream
+- stream_options
+- service_tier
+- metadata
+refused_params:
+- moderation
+- prediction
+declared_noop_params:
+- user
+- safety_identifier
+- prompt_cache_key
+- prompt_cache_options
+- prompt_cache_retention
+extension_params: []
+service_tier_routes:
+  auto:
+    slot: persona
+    echo: default
+  default:
+    slot: persona
+    echo: default
+  flex:
+    slot: persona
+    echo: default
+  scale:
+    slot: persona
+    echo: default
+  fast:
+    slot: router
+    echo: priority
+  priority:
+    slot: router
+    echo: priority
+response_extensions: []

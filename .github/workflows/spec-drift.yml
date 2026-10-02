@@ -1,0 +1,168 @@
+name: Spec drift
+
+# Weekly scheduled check: detect drift between the pinned OpenAI spec
+# and OpenAI's current published spec. The reporter
+# (qa/conformance/spec_drift.py) is report-only and never touches the pin;
+# a non-empty served-operations drift opens an issue here so it lands in
+# the same queue as everything else.
+
+on:
+  schedule:
+    # Mondays 06:00 UTC. Pull requests are checked against the pinned spec;
+    # this scheduled job alone compares it with the current upstream spec.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      issue_on_drift:
+        description: "Open a tracking issue if served-operations drift is detected"
+        type: boolean
+        default: true
+
+# `gh` needs both issues: write and a token in each step's environment.
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: spec-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    name: Detect served-operations drift against upstream
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Install uv and Python
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: latest-known
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install locked dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Run the drift reporter
+        id: drift
+        # Exit 0: clean. 1: served-operations drift. 2: bad input.
+        # We treat exit 1 as the signal to open an issue; everything else
+        # is reported verbatim and surfaces in the Actions UI for triage.
+        run: |
+          set +e
+          uv run python qa/conformance/spec_drift.py --latest --json > drift.json 2> drift.stderr
+          rc=$?
+          echo "drift_exit_code=$rc" >> "$GITHUB_OUTPUT"
+          set -e
+          if [ "$rc" -eq 0 ] || [ "$rc" -eq 1 ]; then
+            exit 0
+          fi
+          {
+            echo "## spec_drift failed to run"
+            echo '```'
+            cat drift.stderr
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
+
+      - name: Decide whether to open an issue
+        id: decide
+        if: ${{ steps.drift.outputs.drift_exit_code == '1' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.issue_on_drift)) }}
+        # Only one open issue per pin, matched by a digest of the pinned
+        # spec in the title. hashFiles() is NOT the file's sha256: it is a
+        # SHA-256 over the per-file hashes of the matched set. It is stable
+        # for an unchanged pin, which is all the matching needs.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRIFT_JSON: drift.json
+          PIN_SHA: ${{ hashFiles('qa/conformance/spec/openapi.json') }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os, subprocess, sys
+          pin_sha = os.environ["PIN_SHA"]
+          report = json.load(open(os.environ["DRIFT_JSON"]))
+          # Build a deterministic, GitHub-friendly title that includes the
+          # pin SHA so duplicate-finding is exact.
+          body = json.dumps(report, indent=2)
+          title = f"Spec drift: served-operations drift detected (pin {pin_sha[:12]})"
+          # Search for an existing open issue with the same pin prefix.
+          existing = subprocess.check_output([
+              "gh", "issue", "list",
+              "--state", "open",
+              "--search", f"Spec drift: served-operations drift detected (pin {pin_sha[:12]}) in:title",
+              "--json", "number",
+          ], text=True)
+          numbers = json.loads(existing)
+          if numbers:
+              print(f"existing_issue_number={numbers[0]['number']}")
+          else:
+              print("existing_issue_number=")
+          # Pass the existing issue number to the following step.
+          PY
+
+      - name: Open or update a tracking issue
+        if: ${{ steps.drift.outputs.drift_exit_code == '1' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.issue_on_drift)) }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRIFT_JSON: drift.json
+          PIN_SHA: ${{ hashFiles('qa/conformance/spec/openapi.json') }}
+          # $GITHUB_OUTPUT is per-step; read the prior step's declared output.
+          EXISTING: ${{ steps.decide.outputs.existing_issue_number }}
+        run: |
+          set -e
+          existing="$EXISTING"
+          body=$(cat <<BODY
+          ## Served-operations spec drift detected
+
+          The scheduled \`spec_drift\` reporter found changes between
+          our pinned OpenAPI spec at commit \`4bb21ba\` and OpenAI's
+          current published spec, for operations we actually serve.
+
+          - Pin: \`qa/conformance/spec/openapi.json\`
+          - Pin digest (Actions hashFiles, not the file's sha256): \`${PIN_SHA}\`
+          - Reporter: \`qa/conformance/spec_drift.py --latest\`
+
+          ### Report
+
+          See the workflow run for the full JSON. Summary here:
+
+          \`\`\`json
+          $(cat "$DRIFT_JSON")
+          \`\`\`
+
+          ### What to do
+
+          1. Read the report; classify each drift entry as new-required,
+             schema-changed, or operation-changed.
+          2. If a new required field on a served schema would break us,
+             file a finding and a PR that handles it (the existing
+             conformance lane will surface it once the field is required).
+          3. If a non-served operation changed, no Chord change is needed
+             unless support for that operation is planned.
+          4. If nothing we serve actually broke (e.g. additive changes
+             only), close this issue with a one-line note and review a
+             separate pin update.
+          BODY
+          )
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+            echo "commented on #$existing"
+          else
+            title="Spec drift: served-operations drift detected (pin ${PIN_SHA:0:12})"
+            gh issue create --title "$title" --body "$body"
+          fi
+
+      - name: Surface report on clean runs
+        if: ${{ steps.drift.outputs.drift_exit_code == '0' }}
+        run: |
+          {
+            echo "## spec drift: clean"
+            echo "No served operation drifted against upstream \`openai/openai-openapi\` main."
+            echo ""
+            echo "Reporter: \`qa/conformance/spec_drift.py --latest\` (exit 0)."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,128 @@
+{
+  "source": {
+    "repo": "openai/openai-openapi",
+    "commit": "4bb21ba8e9213c3d955b69dc3f76dd7537439828",
+    "path": "openapi.json",
+    "sha256": "3d6223349eadfd937624b9e6b8abf596ec2f680a1a367889cf6a6f924e568127",
+    "bytes": 4152521,
+    "spec_version": "2.3.0"
+  },
+  "schema": "CreateChatCompletionRequest",
+  "required": [
+    "messages",
+    "model"
+  ],
+  "params": {
+    "audio": {
+      "deprecated": false
+    },
+    "frequency_penalty": {
+      "deprecated": false
+    },
+    "function_call": {
+      "deprecated": true
+    },
+    "functions": {
+      "deprecated": true
+    },
+    "logit_bias": {
+      "deprecated": false
+    },
+    "logprobs": {
+      "deprecated": false
+    },
+    "max_completion_tokens": {
+      "deprecated": false
+    },
+    "max_tokens": {
+      "deprecated": true
+    },
+    "messages": {
+      "deprecated": false
+    },
+    "metadata": {
+      "deprecated": false
+    },
+    "modalities": {
+      "deprecated": false
+    },
+    "model": {
+      "deprecated": false
+    },
+    "moderation": {
+      "deprecated": false
+    },
+    "n": {
+      "deprecated": false
+    },
+    "parallel_tool_calls": {
+      "deprecated": false
+    },
+    "prediction": {
+      "deprecated": false
+    },
+    "presence_penalty": {
+      "deprecated": false
+    },
+    "prompt_cache_key": {
+      "deprecated": false
+    },
+    "prompt_cache_options": {
+      "deprecated": false
+    },
+    "prompt_cache_retention": {
+      "deprecated": true
+    },
+    "reasoning_effort": {
+      "deprecated": false
+    },
+    "response_format": {
+      "deprecated": false
+    },
+    "safety_identifier": {
+      "deprecated": false
+    },
+    "seed": {
+      "deprecated": true
+    },
+    "service_tier": {
+      "deprecated": false
+    },
+    "stop": {
+      "deprecated": false
+    },
+    "store": {
+      "deprecated": false
+    },
+    "stream": {
+      "deprecated": false
+    },
+    "stream_options": {
+      "deprecated": false
+    },
+    "temperature": {
+      "deprecated": false
+    },
+    "tool_choice": {
+      "deprecated": false
+    },
+    "tools": {
+      "deprecated": false
+    },
+    "top_logprobs": {
+      "deprecated": false
+    },
+    "top_p": {
+      "deprecated": false
+    },
+    "user": {
+      "deprecated": true
+    },
+    "verbosity": {
+      "deprecated": false
+    },
+    "web_search_options": {
+      "deprecated": false
+    }
+  }
+}
