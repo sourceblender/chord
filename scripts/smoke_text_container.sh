@@ -42,6 +42,7 @@ routing:
   chat: {endpoint: chat}
 YAML
 docker run --detach --name "$container" --network host \
+  -e PUBLIC_HOST=127.0.0.1 \
   -e CHORD_API_KEY=local-smoke-key \
   -e CHORD_CONFIG=/app/chord.yaml \
   -v "$tmp/chord.yaml:/app/chord.yaml:ro" chord:text-smoke >/dev/null
