@@ -473,6 +473,8 @@ class Settings:
             errors.append("VIDEO_TIMEOUT_S must be greater than zero and finite")
         if not _positive_finite(self.image_deadline_s):
             errors.append("IMAGE_DEADLINE_S must be greater than zero and finite")
+        if not _positive_finite(self.image_prompt_timeout_s):
+            errors.append("IMAGE_PROMPT_TIMEOUT_S must be greater than zero and finite")
         if not _positive_finite(self.artifact_url_ttl_s):
             errors.append("ARTIFACT_URL_TTL_S must be greater than zero and finite")
         if self.retention_days < 0:
@@ -699,6 +701,9 @@ class Settings:
     # The image provider deadline covers lock wait, submission and rendering.
     # A render that exceeds it fails before an HTTP caller waits indefinitely.
     image_deadline_s: float = field(default_factory=lambda: float(_env("IMAGE_DEADLINE_S", "1500")))
+    # Bound on the chat model writing an image prompt. Past it, the user's own
+    # last message is the prompt.
+    image_prompt_timeout_s: float = field(default_factory=lambda: float(_env("IMAGE_PROMPT_TIMEOUT_S", "60")))
 
     def embeddings_auth_header(self) -> str:
         """`Authorization` for the embeddings upstream, or "" to inherit the Bearer."""

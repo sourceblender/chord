@@ -59,10 +59,11 @@ def app(tmp_path, monkeypatch, transport):
         raise RuntimeError("stop after the handoff")      # the test only needs the job it was given
 
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
+    monkeypatch.setitem(specialists.SPECIALISTS, "search", image)   # same stand-in: records the job, stops
     monkeypatch.setattr(router_mod, "classify", functools.partial(router_mod.classify, transport=transport))
     BriefRouter.calls, BriefRouter.route, BriefRouter.fail = 0, "chat", False
     settings = Settings(data_dir=tmp_path, router_enabled=True, router_backend="classifier",
-                        router_classifier_url=URL, enabled_routes=frozenset({"image"}))
+                        router_classifier_url=URL, enabled_routes=frozenset({"image", "search"}))
     up = FakeUpstream()
     return TestClient(create_app(Deps(settings, upstream=up, model=lambda n: BriefRouter(),
                                       image_backend=AvailableImageBackend()))), settings, started
@@ -94,23 +95,39 @@ def test_a_chat_lane_never_waits_on_the_router_model(tmp_path, monkeypatch):
 
 
 def test_a_specialist_lane_is_the_classifiers_and_the_brief_is_the_router_models(tmp_path, monkeypatch):
-    transport, seen = classifier_service(lane("image"))
+    transport, seen = classifier_service(lane("search"))
     client, settings, started = app(tmp_path, monkeypatch, transport)
-    say(client, "draw me a blue mug")
+    say(client, "look up blue mugs")
     assert BriefRouter.calls == 1
     assert len(started) == 1                              # the router model said chat; the classifier's lane won
     job = started[0]
     assert (job.intent, job.constraints, job.latitude) == ("a mug on a desk", ["blue"], "style is hers")
     t = last_trace(settings)
-    assert t["route_decision"] == "image" and t["brief_router_route"] == "chat"
+    assert t["route_decision"] == "search" and t["brief_router_route"] == "chat"
+
+
+def test_an_image_lane_asks_no_brief_the_chat_model_writes_the_prompt(tmp_path, monkeypatch):
+    transport, _ = classifier_service(lane("image"))
+    client, settings, started = app(tmp_path, monkeypatch, transport)
+    history = [{"role": "system", "content": "You are Ada."},
+               *[{"role": r, "content": f"turn {i}"} for i in range(10) for r in ("user", "assistant")]]
+    say(client, "draw me a blue mug", history)
+    assert BriefRouter.calls == 0                         # no router-model brief on an image turn
+    job = started[0]
+    assert job.intent == "draw me a blue mug"
+    assert len(job.conversation) == len(history) + 1      # the whole request, not the router's window
+    assert job.conversation[0] == {"role": "system", "text": "You are Ada."}
+    t = last_trace(settings)
+    assert t["route_decision"] == "image" and t["image_brief"] == "skipped" and t["router_model"] == "classifier"
+    assert "route" not in (t.get("latency_ms") or {})
 
 
 def test_a_failed_brief_still_starts_the_specialist_with_her_words(tmp_path, monkeypatch):
-    transport, _ = classifier_service(lane("image"))
+    transport, _ = classifier_service(lane("search"))
     client, settings, started = app(tmp_path, monkeypatch, transport)
     BriefRouter.fail = True
-    say(client, "draw me a blue mug")
-    assert len(started) == 1 and started[0].intent == "draw me a blue mug"
+    say(client, "look up blue mugs")
+    assert len(started) == 1 and started[0].intent == "look up blue mugs"
     assert last_trace(settings)["router_call_error"].startswith("router call failed")
 
 

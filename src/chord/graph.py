@@ -1318,6 +1318,15 @@ def build(
                     trace.set(classifier_route_not_registered=lane)
                 trace.set(route_decision="chat", router_model="classifier")
                 return {"decision": router_mod.RouteDecision(route="chat")}
+            if lane == "image":
+                # The chat model the user is talking to writes the render prompt
+                # from the whole conversation (specialists/image.py), so no
+                # router-model brief is asked for: it would go unused.
+                last_user = next(
+                    (m["text"] for m in reversed(routed) if m["role"] == "user"), ""
+                )
+                trace.set(route_decision=lane, router_model="classifier", image_brief="skipped")
+                return {"decision": router_mod.RouteDecision(route=lane, intent=last_user)}
             if lane is not None:
                 # The lane is the classifier's. The brief a specialist reads (intent,
                 # constraints, latitude) is still the router model's, asked only on
@@ -1467,7 +1476,10 @@ def build(
             latitude=decision.latitude,
             conversation=[
                 {"role": m["role"], "text": message_text(m)}
-                for m in state["messages"][-router_mod.HISTORY_TURNS :]
+                # The image lane's prompt is written by the chat model from the
+                # whole request; other lanes keep the router's window.
+                for m in (state["messages"] if decision.route == "image"
+                          else state["messages"][-router_mod.HISTORY_TURNS :])
             ],
             web_search_options=state["params"].get("web_search_options")
             if decision.route == "search"
@@ -1499,6 +1511,7 @@ def build(
             model=model,
             progress=progress,
             image_backend=image_backend,
+            persona_model=state.get("persona_model") or settings.persona_model,
         )
         with trace.timed(f"specialist:{cap.id}"):
             try:
