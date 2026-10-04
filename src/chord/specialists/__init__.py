@@ -44,6 +44,10 @@ class SpecialistContext:
     progress: Callable[[str], None] = lambda stage: None
     # The configured provider owns scene enhancement and rendering.
     image_backend: ComfyImageBackend | None = None
+    # The chat model actually answering this request (a service-tier override
+    # included). In chat, it is the model the user is talking to, so it writes
+    # the render prompt for the image lane.
+    persona_model: str = ""
 
 
 Specialist = Callable[[Job, SpecialistContext], Awaitable[Result]]

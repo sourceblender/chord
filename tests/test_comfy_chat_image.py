@@ -41,6 +41,18 @@ class ImageRouter:
         return Reply()
 
 
+class PromptWriter:
+    """The chat model the user is talking to, writing the render prompt."""
+    seen: list = []
+
+    async def ainvoke(self, messages):
+        PromptWriter.seen = messages
+
+        class Reply:
+            content = "A blue ceramic mug on a wooden table, soft morning light"
+        return Reply()
+
+
 def _png() -> bytes:
     output = BytesIO()
     metadata = PngInfo()
@@ -82,6 +94,7 @@ def test_configured_chat_image_uses_generic_workflow(
     }))
     settings = Settings(
         data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset(),
+        persona_model="chat-model", router_model="router-model",
         image_comfy_base_url="http://localhost:8188",
         image_workflow=ImageWorkflowConfig(workflow, tmp_path, "6", "9"),
     )
@@ -97,7 +110,8 @@ def test_configured_chat_image_uses_generic_workflow(
             pass
 
     try:
-        deps = Deps(settings, upstream=upstream, model=lambda _: ImageRouter(),
+        deps = Deps(settings, upstream=upstream,
+                    model=lambda n: ImageRouter() if n == settings.router_model else PromptWriter(),
                     image_backend=Backend())
         health = TestClient(create_internal_app(deps)).get("/internal/health").json()
         assert health["capabilities"] == {
@@ -116,7 +130,9 @@ def test_configured_chat_image_uses_generic_workflow(
             "model": "chord-1-poly", "messages": [{"role": "user", "content": "draw a blue mug"}],
         })
         assert response.status_code == 200, response.text
-        assert calls == ["a blue mug\nConstraints: no text"]
+        # The chat model wrote the prompt; the router's brief is not the prompt.
+        assert calls == ["A blue ceramic mug on a wooden table, soft morning light"]
+        assert "draw a blue mug" in PromptWriter.seen[-1].content
         assert "make pictures" in upstream.bodies[-1]["messages"][0]["content"]
         content = response.json()["choices"][0]["message"]["content"]
         assert ("![image](data:image/png;base64," in content) is not bad_png
@@ -128,6 +144,67 @@ def test_configured_chat_image_uses_generic_workflow(
         assert trace["route_decision"] == "image"
         assert trace.get("route_unavailable") is None
         assert trace["image_backend"] == "comfyui"
+        assert trace["image_prompt_source"] == "chat_model"
+        assert trace["image_prompt_model"] == settings.persona_model
         assert (trace["result_status"] == "completed") is not bad_png
+    finally:
+        manifest.load.cache_clear()
+
+
+@pytest.mark.parametrize("door", ["chat_stream", "responses", "responses_stream"])
+def test_chat_model_prompt_reaches_comfy_and_the_image_is_delivered_on_every_door(tmp_path, monkeypatch, door):
+    package = Path(__file__).resolve().parents[1] / "src" / "chord"
+    monkeypatch.setattr(manifest, "PATH", package / "manifest.yaml")
+    monkeypatch.setattr(registry, "PATH", package / "registry.yaml")
+    manifest.load.cache_clear()
+    load_specialists()
+    workflow = tmp_path / "still.json"
+    workflow.write_text(json.dumps({
+        "6": {"class_type": "CLIPTextEncode", "inputs": {"text": "placeholder"}},
+        "9": {"class_type": "SaveImage", "inputs": {"images": ["8", 0]}},
+    }))
+    settings = Settings(
+        data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset(),
+        persona_model="chat-model", router_model="router-model",
+        image_comfy_base_url="http://localhost:8188",
+        image_workflow=ImageWorkflowConfig(workflow, tmp_path, "6", "9"),
+    )
+    calls = []
+
+    class Backend:
+        async def render(self, prompt):
+            calls.append(prompt)
+            return _png(), "comfy-prompt-1"
+
+        async def aclose(self):
+            pass
+
+    try:
+        deps = Deps(settings, upstream=FakeUpstream(),
+                    model=lambda n: ImageRouter() if n == settings.router_model else PromptWriter(),
+                    image_backend=Backend())
+        client = TestClient(create_app(deps))
+        if door == "chat_stream":
+            with client.stream("POST", "/v1/chat/completions", json={
+                "model": "chord-1-poly", "stream": True,
+                "messages": [{"role": "user", "content": "draw a blue mug"}],
+            }) as r:
+                assert r.status_code == 200
+                body = "".join(r.iter_text())
+            assert "data:image/png;base64," in body
+        else:
+            payload = {"model": "chord-1-poly", "input": "draw a blue mug", "tools": [{"type": "image_generation"}]}
+            if door == "responses":
+                r = client.post("/v1/responses", json=payload)
+                assert r.status_code == 200, r.text
+                assert "image_generation_call" in [i["type"] for i in r.json()["output"]]
+            else:
+                with client.stream("POST", "/v1/responses", json={**payload, "stream": True}) as r:
+                    assert r.status_code == 200
+                    body = "".join(r.iter_text())
+                assert "image_generation_call" in body
+        assert calls == ["A blue ceramic mug on a wooden table, soft morning light"]
+        trace = json.loads(sorted(Path(settings.trace_dir).glob("*.jsonl"))[0].read_text().splitlines()[-1])
+        assert trace["image_prompt_source"] == "chat_model" and trace["result_status"] == "completed"
     finally:
         manifest.load.cache_clear()

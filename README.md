@@ -55,6 +55,15 @@ endpoint, and the router must be on (`ROUTER_ENABLED=true`). `/internal/health` 
 A capability in the registry may carry a `certified` record (who tested which model and prompt version, and when).
 It is reported for reference and never turns a route on or off.
 
+### Who writes an image prompt
+
+In chat (`/v1/chat/completions`) and Responses, the chat model you are talking to writes the image prompt. When a
+turn is routed to the image lane, Chord asks the chat model serving that request for a render prompt, as a plain-text
+reply drawn from the whole conversation, and submits that text to your workflow unchanged. It makes no tool call. If
+that request fails, takes longer than `IMAGE_PROMPT_TIMEOUT_S` (default 60 seconds), or returns no usable prompt,
+your own last message is rendered word for word. On `/v1/images/generations` you write the prompt yourself, and it
+is rendered as given.
+
 ### ComfyUI workflows
 
 Chord ships no image model or graph. Image generation, edits and variations each run a ComfyUI workflow you supply, saved in ComfyUI's API format under `image_workflows_dir`. For each route you name the node inputs Chord fills; the rest of the graph (model, sampler, size) is yours. Every binding is checked against the graph at startup.
