@@ -114,6 +114,20 @@ def test_a_writer_must_name_a_chat_endpoint(tmp_path, routing, message):
         v2(tmp_path, routing, endpoints)
 
 
+@pytest.mark.parametrize("url, ok", [
+    ("not-a-url", False), ("http://quick.test:notaport/v1", False), ("http://quick.test:70000/v1", False),
+    ("ftp://quick.test/v1", False), ("http://quick.test:8000/v1", True),
+])
+def test_the_fast_endpoint_url_is_validated_like_the_others(tmp_path, url, ok):
+    quick = f"  quick: {{type: openai-chat, url: '{url}', model: quick-model, auth: null}}\n"
+    s = v2(tmp_path, "  chat: {endpoint: main}\n  fast: {endpoint: quick}\n", MAIN + quick)
+    if ok:
+        s.validate_startup()
+    else:
+        with pytest.raises(ConfigurationError, match="routing.fast endpoint must be an absolute http"):
+            s.validate_startup()
+
+
 def test_one_model_name_on_two_addresses_is_refused_across_all_writers(tmp_path):
     clash = "  other: {type: openai-chat, url: http://elsewhere.test/v1, model: main-model, auth: null}\n"
     s = v2(tmp_path, "  chat: {endpoint: main}\n  fast: {endpoint: other}\n", MAIN + clash)
@@ -151,7 +165,7 @@ routing:
     assert s.tier_model("fast") == s.tier_model("router") == "small-model"  # fast follows router, as before
     assert (s.router_enabled, s.router_backend, s.router_classifier_url) == (True, "classifier", "http://c.test/route")
     # The fast reply keeps the persona's thinking mode in v1, as before.
-    assert s.reply_thinking_mode("small-model") == "qwen_chat_template"
+    assert s.tier_thinking_mode("router") == s.tier_thinking_mode("fast") == "qwen_chat_template"
 
 
 def test_an_env_only_install_keeps_fast_on_the_router(monkeypatch):
@@ -159,7 +173,7 @@ def test_an_env_only_install_keeps_fast_on_the_router(monkeypatch):
                  router_model="small-model", router_base_url="http://small.test/v1",
                  persona_thinking_mode="qwen_chat_template", router_thinking_mode="passthrough")
     assert s.config_version == 0 and s.tier_model("fast") == "small-model"
-    assert s.reply_thinking_mode("small-model") == "qwen_chat_template"
+    assert s.tier_thinking_mode("router") == "qwen_chat_template"
 
 
 # --- the fast endpoint owns its thinking in v2 ---
@@ -167,8 +181,21 @@ def test_an_env_only_install_keeps_fast_on_the_router(monkeypatch):
 def test_a_version_two_fast_reply_uses_the_fast_endpoints_thinking(tmp_path):
     main = "  main: {type: openai-chat, url: http://main.test/v1, model: main-model, auth: null, thinking: qwen_chat_template}\n"
     s = v2(tmp_path, "  chat: {endpoint: main}\n  fast: {endpoint: quick}\n", main + QUICK)
-    assert s.reply_thinking_mode("quick-model") == "passthrough"
-    assert s.reply_thinking_mode("main-model") == "qwen_chat_template"
+    assert s.tier_thinking_mode("fast") == "passthrough"
+    assert s.tier_thinking_mode("persona") == s.tier_thinking_mode(None) == "qwen_chat_template"
+
+
+SAME_MODEL = ("  main: {type: openai-chat, url: http://main.test/v1, model: main-model, auth: null, thinking: qwen_chat_template}\n"
+              "  plain: {type: openai-chat, url: http://main.test/v1, model: main-model, auth: null, thinking: passthrough}\n")
+
+
+def test_role_not_model_name_decides_fast_thinking(tmp_path):
+    """Main and fast: one model at one address, different thinking (Tama, review of 19f4828d)."""
+    s = v2(tmp_path, "  chat: {endpoint: main}\n  fast: {endpoint: plain}\n", SAME_MODEL)
+    s.validate_startup()
+    assert s.tier_model("fast") == s.tier_model("persona") == "main-model"
+    assert s.tier_thinking_mode("fast") == "passthrough"
+    assert s.tier_thinking_mode(None) == "qwen_chat_template"
 
 
 # --- manifest tier slots ---
@@ -227,6 +254,30 @@ def test_every_entry_point_sends_a_fast_request_to_the_fast_model(tmp_path, monk
     assert "chat_template_kwargs" not in up.bodies[-1]
 
 
+@pytest.mark.parametrize("tier, switched", [("fast", False), (None, True)])
+def test_same_model_main_and_fast_answer_with_their_own_thinking(tmp_path, monkeypatch, request, tier, switched):
+    monkeypatch.setattr(manifest, "PATH", PACKAGED_MANIFEST)
+    manifest.load.cache_clear()
+    request.addfinalizer(manifest.load.cache_clear)
+    from dataclasses import replace
+    s = replace(v2(tmp_path, "  chat: {endpoint: main}\n  fast: {endpoint: plain}\n", SAME_MODEL), data_dir=tmp_path)
+    up = FakeUpstream()
+    deps = Deps(s, upstream=up, model=lambda name: None)
+    client = TestClient(create_app(deps))
+    body = {"model": "chord-1-poly", "messages": [{"role": "user", "content": "hi"}]}
+    r = client.post("/v1/chat/completions", json={**body, **({"service_tier": tier} if tier else {})})
+    assert r.status_code == 200
+    assert up.bodies[-1]["model"] == "main-model"
+    assert ("chat_template_kwargs" in up.bodies[-1]) is switched
+    from chord.server import create_internal_app
+    record = TestClient(create_internal_app(deps)).get(f"/internal/traces/{r.headers['x-request-id']}").json()
+    assert record["dispatch_source"] == "yaml"
+    if tier:
+        assert record["fast_model"] == "main-model" and record["reply_thinking"] == "passthrough"
+    else:
+        assert "fast_model" not in record
+
+
 # --- search: the helper writes the query in v2; v1/env keep the registry's writer ---
 
 class Writer:
@@ -274,6 +325,28 @@ def test_a_main_only_search_query_binds_thinking_off(tmp_path, monkeypatch):
         ("main-model", {"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}})]
 
 
+@pytest.mark.parametrize("version", [0, 1, 2])
+def test_a_writer_that_cannot_be_built_falls_back_to_the_users_words(monkeypatch, version):
+    """Building the writer sits inside the bounded fallback, as before (Tama, review of 19f4828d)."""
+    seen = []
+    monkeypatch.setattr(S, "load", lambda: {"search": SimpleNamespace(model="gone")})
+
+    async def fake_search(query, key, transport=None, **options):
+        seen.append(query)
+        return "brave", [S.Hit("A", "https://example.com/a", "a")], []
+    monkeypatch.setattr(S, "search", fake_search)
+
+    def no_backend(name):
+        raise ValueError(f"model {name!r} has no configured backend")
+    s = Settings(persona_model="m", persona_base_url="http://m.test/v1", router_model="m",
+                 router_base_url="http://m.test/v1", config_version=version)
+    ctx = SpecialistContext(settings=s, artifacts=SimpleNamespace(),
+                            trace=Trace(persona_id="generic", model_id_requested="chord-1-poly"), model=no_backend)
+    job = Job(job_id="j", persona_id="generic", intent="x", conversation=[{"role": "user", "text": "find blue mugs"}])
+    result = asyncio.run(S.run(job, ctx))
+    assert seen == ["find blue mugs"] and result.status.value == "completed"
+
+
 @pytest.mark.parametrize("version", [0, 1])
 def test_version_one_and_env_keep_the_registry_search_writer(monkeypatch, version):
     s = Settings(persona_model="main-model", persona_base_url="http://main.test/v1",
@@ -302,15 +375,26 @@ def test_preflight_probes_each_distinct_writer_once(tmp_path):
     assert [h for h, _, _ in seen] == ["main.test"]
 
 
-def test_preflight_separates_models_and_credentials_on_one_address(tmp_path, monkeypatch):
-    monkeypatch.setenv("SMALL_KEY", "k-small")
-    same_host = ("  small: {type: openai-chat, url: http://main.test/v1, model: small-model, auth: null}\n"
-                 "  quick: {type: openai-chat, url: http://main.test/v1, model: main-model, auth: '${SMALL_KEY}'}\n")
+def test_preflight_probes_each_model_served_from_one_address(tmp_path):
+    """Distinct targets are URL + model (+ credential). Two credentials on one URL
+    are refused by credential_for before preflight, so only the model axis is
+    exercised here; the credential axis needs a separate address (next test)."""
+    same_host = "  small: {type: openai-chat, url: http://main.test/v1, model: small-model, auth: null}\n"
     s = v2(tmp_path, "  chat: {endpoint: main}\n  helper: {endpoint: small}\n", MAIN + same_host)
     seen: list = []
     with httpx.Client(transport=httpx.MockTransport(answer_all(seen))) as client:
         assert check(s, client) == []
     assert sorted(body["model"] for _, body, _ in seen) == ["main-model", "small-model"]
+
+
+def test_preflight_sends_each_target_its_own_credential(tmp_path, monkeypatch):
+    monkeypatch.setenv("QUICK_KEY", "k-quick")
+    quick = "  quick: {type: openai-chat, url: http://quick.test/v1, model: quick-model, auth: '${QUICK_KEY}'}\n"
+    s = v2(tmp_path, "  chat: {endpoint: main}\n  fast: {endpoint: quick}\n", MAIN + quick)
+    seen: list = []
+    with httpx.Client(transport=httpx.MockTransport(answer_all(seen))) as client:
+        assert check(s, client) == []
+    assert {(h, a) for h, _, a in seen} == {("main.test", None), ("quick.test", "Bearer k-quick")}
 
 
 def test_preflight_sends_the_classifier_a_lane_request_never_a_chat_one(tmp_path):
@@ -352,3 +436,16 @@ def test_the_guides_examples_load(tmp_path):
     assert minimal.router_model == minimal.tier_model("fast") == minimal.persona_model and not minimal.router_enabled
     assert full.router_model == "my-small-model" and full.tier_model("fast") == "my-main-model"
     assert full.router_backend == "classifier"
+
+
+@pytest.mark.parametrize("version, baked", [(2, None), (1, {"chat_template_kwargs": {"enable_thinking": False}})])
+def test_a_cached_client_carries_a_thinking_switch_only_in_version_one(tmp_path, version, baked):
+    """v2 binds thinking per call by role, so one model's cached client can serve
+    helper (off) and fast (passthrough) without carrying either; v1 keeps the
+    earlier name-keyed switch."""
+    from dataclasses import replace
+    s = Settings(data_dir=tmp_path, persona_model="main-model", persona_base_url="http://main.test/v1",
+                 router_model="small-model", router_base_url="http://small.test/v1",
+                 router_thinking_mode="qwen_chat_template", config_version=version)
+    deps = Deps(replace(s), upstream=FakeUpstream())
+    assert deps.model("small-model").extra_body == baked

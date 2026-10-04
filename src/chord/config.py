@@ -485,6 +485,7 @@ class Settings:
         urls = {
             "PERSONA_BASE_URL": self.persona_base_url,
             "ROUTER_BASE_URL": self.router_base_url,
+            "routing.fast endpoint": self.fast_base_url,
             "ROUTER_CLASSIFIER_URL": self.router_classifier_url,
             "STT_BASE_URL": self.stt_base_url,
             "TTS_BASE_URL": self.tts_base_url,
@@ -644,12 +645,14 @@ class Settings:
             raise ValueError(f"service tier slot {slot!r}; expected one of {sorted(TIER_SLOTS)}")
         return self.slot_target("persona" if slot == "persona" else "fast")[0]
 
-    def reply_thinking_mode(self, model: str) -> str:
-        """The thinking mode for a reply written by `model`. In a version 2 config the
-        fast endpoint owns its own; everywhere else every reply uses the persona's,
-        as before."""
-        if (self.config_version == 2 and self.fast_thinking_mode and model == self.fast_model
-                and model != self.persona_model):
+    def tier_thinking_mode(self, slot: str | None) -> str:
+        """The thinking mode for a reply the tier `slot` selected (None: no tier).
+
+        Decided by the role that was selected, never by model name: main and fast
+        may be the same model at the same address with different settings. In a
+        version 2 config the fast endpoint owns its own; everywhere else every reply
+        uses the persona's, as before."""
+        if self.config_version == 2 and slot in ("fast", "router") and self.fast_thinking_mode:
             return self.fast_thinking_mode
         return self.persona_thinking_mode
 

@@ -147,8 +147,12 @@ class Deps:
             # Not when the router IS the persona: persona thinking is the
             # client's to ask for (reasoning_effort).
             thinking_off = ({"chat_template_kwargs": {"enable_thinking": False}}
-                            if (name == settings.router_model and name != settings.persona_model
+                            if (settings.config_version != 2
+                                and name == settings.router_model and name != settings.persona_model
                                 and settings.router_thinking_mode == "qwen_chat_template") else None)
+            # Version 2 binds thinking at each call by its role (router_client for the
+            # helper's calls, the image writer by the selected reply), so a client
+            # cached for one role never carries another role's switch.
             if credential:
                 client = ChatOpenAI(
                     model=name,

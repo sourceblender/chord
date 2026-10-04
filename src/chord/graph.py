@@ -55,6 +55,7 @@ class _TurnInputs(TypedDict):
     persona_model: (
         str | None
     )  # per-request override from service_tier_routes; else settings.persona_model
+    reply_thinking: str | None  # that override's thinking mode, chosen by role; else the persona's
     verbosity: (
         str | None
     )  # the client's verbosity, consumed here, never forwarded (S14)
@@ -760,7 +761,7 @@ def build(
             # prefill, its usage.prompt_tokens exact for this template and base.
             body.pop("max_tokens", None)
             body["max_completion_tokens"] = 1
-        body = thinking_switch(backend_tool_choice(body), settings.reply_thinking_mode(persona_model))
+        body = thinking_switch(backend_tool_choice(body), state.get("reply_thinking") or settings.persona_thinking_mode)
         # A forced call the backend didn't make is repaired through a JSON schema (#216):
         # the normal tool path runs first, and only a reply WITHOUT the required call gets
         # the second, constrained pass, in place of the 502 it used to become.
@@ -1512,6 +1513,7 @@ def build(
             progress=progress,
             image_backend=image_backend,
             persona_model=state.get("persona_model") or settings.persona_model,
+            reply_thinking=state.get("reply_thinking") or settings.persona_thinking_mode,
         )
         with trace.timed(f"specialist:{cap.id}"):
             try:

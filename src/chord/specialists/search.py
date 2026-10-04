@@ -149,12 +149,12 @@ async def run(job: Job, ctx: SpecialistContext) -> Result:
     # Who writes the query. A version 2 config names it: the helper, with the helper's
     # thinking switch, whatever the registry record says. Version 1 and env-only
     # installs keep the registry's model, as before.
-    if ctx.settings.config_version == 2:
-        from ..graph import router_client  # deferred: graph imports the specialists
-        writer = router_client(ctx.model(ctx.settings.router_model), ctx.settings.router_thinking_mode)
-    else:
-        writer = ctx.model(capability.model)
     try:  # bounded like the router; on any failure the user's own words are the query (#95)
+        if ctx.settings.config_version == 2:
+            from ..graph import router_client  # deferred: graph imports the specialists
+            writer = router_client(ctx.model(ctx.settings.router_model), ctx.settings.router_thinking_mode)
+        else:
+            writer = ctx.model(capability.model)
         reply = await asyncio.wait_for(writer.ainvoke(
             [SystemMessage(QUERY_SYSTEM), HumanMessage(f"Last message: {last_user}\nWhat is wanted: {job.intent}")]),
             ctx.settings.router_timeout_s)
