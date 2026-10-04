@@ -60,7 +60,8 @@ It is reported for reference and never turns a route on or off.
 In chat (`/v1/chat/completions`) and Responses, the chat model you are talking to writes the image prompt. When a
 turn is routed to the image lane, Chord asks the chat model serving that request for a render prompt, as a plain-text
 reply drawn from the whole conversation, and submits that text to your workflow unchanged. It makes no tool call. If
-that request fails, takes longer than `IMAGE_PROMPT_TIMEOUT_S` (default 60 seconds), or returns no usable prompt,
+that request fails, takes longer than `IMAGE_PROMPT_TIMEOUT_S` (default 60 seconds), or returns no usable prompt (empty, longer than
+4,000 characters, JSON, or tool-call markup),
 your own last message is rendered word for word. On `/v1/images/generations` you write the prompt yourself, and it
 is rendered as given.
 
