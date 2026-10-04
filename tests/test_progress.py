@@ -28,7 +28,7 @@ class FixedRouter:
 
 
 def image_settings(tmp_path):
-    return Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset({"image"}))
+    return Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset({"image"}))
 
 
 def stream_chunks(client, text="draw a mug"):

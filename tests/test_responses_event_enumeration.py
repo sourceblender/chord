@@ -58,7 +58,7 @@ def _image(monkeypatch):
                       artifacts=[ctx.artifacts.register(PNG, "image/png")], summary="a mug")
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
     _, client, _ = make(_tmp(), router=FixedRouter, router_enabled=True,
-                        experimental_routes=frozenset({"image"}))
+                        enabled_routes=frozenset({"image"}))
     return events_of(client, {"model": MODEL, "input": "draw a mug", "tools": [{"type": "image_generation"}]})
 
 
@@ -78,7 +78,7 @@ def _web_search(monkeypatch):
 
     monkeypatch.setitem(specialists.SPECIALISTS, "search", search)
     _, client, _ = make(_tmp(), router=SearchRouter, router_enabled=True,
-                        experimental_routes=frozenset({"search"}))
+                        enabled_routes=frozenset({"search"}))
     return events_of(client, {"model": MODEL, "input": "weather in Paris?", "tools": [{"type": "web_search"}]})
 
 

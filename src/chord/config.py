@@ -133,8 +133,13 @@ class Settings:
             mark = getattr(exc, "problem_mark", None)
             location = f" at line {mark.line + 1}, column {mark.column + 1}" if mark else ""
             raise ConfigurationError(f"CHORD_CONFIG {path} is invalid YAML{location}") from None
-        if not isinstance(raw, dict) or set(raw) - {"version", "endpoints", "routing", "image_workflows_dir"}:
-            raise ConfigurationError("CHORD_CONFIG supports version, endpoints, routing and image_workflows_dir")
+        if not isinstance(raw, dict) or set(raw) - {"version", "endpoints", "routing", "image_workflows_dir",
+                                                      "enabled_routes"}:
+            raise ConfigurationError(
+                "CHORD_CONFIG supports version, endpoints, routing, image_workflows_dir and enabled_routes")
+        enabled = raw.get("enabled_routes", [])
+        if not isinstance(enabled, list) or not all(isinstance(r, str) and r.strip() for r in enabled):
+            raise ConfigurationError("enabled_routes must be a list of route names")
         version = raw.get("version", 1)  # versionless files from #379 are v1
         if type(version) is not int or version != 1:
             raise ConfigurationError("CHORD_CONFIG version must be 1")
@@ -342,8 +347,8 @@ class Settings:
         base = cls()
         return replace(base,
             # A YAML install is self-contained: stale env must not enable a
-            # specialist or override endpoint auth.
-            experimental_routes=frozenset(),
+            # specialist or override endpoint auth. The file enables its own.
+            enabled_routes=frozenset(r.strip() for r in enabled),
             persona_model=chat["model"], persona_base_url=chat["url"], persona_api_key=chat["auth"],
             persona_thinking_mode=chat["thinking"],
             router_model=router["model"], router_base_url=router["url"], router_api_key=router["auth"],
@@ -377,6 +382,11 @@ class Settings:
         its first user request.
         """
         errors: list[str] = []
+
+        from . import registry  # registry imports nothing from config; deferred to keep import order flat
+        unknown = sorted(self.enabled_routes - set(registry.load()))
+        if unknown:
+            errors.append(f"enabled routes are not in the registry: {', '.join(unknown)}")
 
         clients: tuple[tuple[str, str], ...] = ()
         try:
@@ -721,11 +731,13 @@ class Settings:
     router_classifier_url: str = field(default_factory=lambda: _env("ROUTER_CLASSIFIER_URL", ""))
     # Past this the turn is routed by the router model instead.
     router_classifier_timeout_s: float = field(default_factory=lambda: float(_env("ROUTER_CLASSIFIER_TIMEOUT_S", "1")))
-    # Capabilities routable BEFORE certification, for experiments only. Every
-    # such turn is traced as experimental, and the manifest still advertises
-    # nothing for them.
-    experimental_routes: frozenset = field(default_factory=lambda: frozenset(
-        r.strip() for r in _env("EXPERIMENTAL_ROUTES", "").split(",") if r.strip()))
+    # Specialist routes the operator turns on (search, audio, video). A route
+    # runs when it is enabled here and its backend is configured; a registry
+    # `certified` record is reported, never required. Image is enabled by
+    # configuring an image workflow. EXPERIMENTAL_ROUTES is the earlier name.
+    enabled_routes: frozenset = field(default_factory=lambda: frozenset(
+        r.strip() for r in (_env("ENABLED_ROUTES", "") or _env("EXPERIMENTAL_ROUTES", "")).split(",")
+        if r.strip()))
     # The http(s) hosts a chat image_url part may name (review 2026-09-22, #7).
     # The persona BACKEND fetches image_url parts itself, from its own position
     # on the VLAN, so every http URL a caller can name is a fetch primitive

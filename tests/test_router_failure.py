@@ -51,7 +51,7 @@ def test_router_failure_falls_back_to_chat_within_our_deadline(tmp_path, monkeyp
 
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
     settings = Settings(data_dir=tmp_path, router_enabled=True,
-                        experimental_routes=frozenset({"image"}), router_timeout_s=0.3)
+                        enabled_routes=frozenset({"image"}), router_timeout_s=0.3)
     up = FakeUpstream()
     client = TestClient(create_app(Deps(settings, upstream=up, model=lambda n: router())))
     t0 = time.monotonic()

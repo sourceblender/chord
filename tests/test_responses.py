@@ -228,7 +228,7 @@ def test_pure_built_in_tools_still_route_to_the_specialist(tmp_path, monkeypatch
 
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
     deps, client, _ = make(tmp_path, router=FixedRouter, router_enabled=True,
-                           experimental_routes=frozenset({"image"}), image_backend=AvailableImageBackend())
+                           enabled_routes=frozenset({"image"}), image_backend=AvailableImageBackend())
     r = client.post("/v1/responses", json={
         "model": MODEL, "input": "draw a mug",
         "tools": [{"type": "image_generation"}],
@@ -278,7 +278,7 @@ def test_built_in_image_generation_is_an_item_and_only_when_offered(tmp_path, mo
 
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
     deps, client, sdk = make(tmp_path, router=FixedRouter, router_enabled=True,
-                             experimental_routes=frozenset({"image"}), image_backend=AvailableImageBackend())
+                             enabled_routes=frozenset({"image"}), image_backend=AvailableImageBackend())
     plain = client.post("/v1/responses", json={"model": MODEL, "input": "draw a mug"}).json()
     assert ran == [] and [i["type"] for i in plain["output"]] == ["message"]
 
@@ -304,7 +304,7 @@ def test_built_in_web_search_reports_the_call(tmp_path, monkeypatch):
             return R()
 
     monkeypatch.setitem(specialists.SPECIALISTS, "search", search)
-    deps, client, sdk = make(tmp_path, router=SearchRouter, router_enabled=True, experimental_routes=frozenset({"search"}))
+    deps, client, sdk = make(tmp_path, router=SearchRouter, router_enabled=True, enabled_routes=frozenset({"search"}))
     body = client.post("/v1/responses", json={"model": MODEL, "input": "weather in Paris?", "tools": [{"type": "web_search"}]}).json()
     strict(body, "response")
     assert [i["type"] for i in body["output"]] == ["web_search_call", "message"]
@@ -355,7 +355,7 @@ def test_an_image_stream_ends_with_the_image_item(tmp_path, monkeypatch):
                       artifacts=[ctx.artifacts.register(PNG, "image/png")], summary="a mug")
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
     deps, client, sdk = make(tmp_path, router=FixedRouter, router_enabled=True,
-                             experimental_routes=frozenset({"image"}), image_backend=AvailableImageBackend())
+                             enabled_routes=frozenset({"image"}), image_backend=AvailableImageBackend())
     events = events_of(client, {"model": MODEL, "input": "draw a mug", "tools": [{"type": "image_generation"}]})
     for e in events:
         strict(e, "response-event")

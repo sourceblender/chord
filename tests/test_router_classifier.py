@@ -62,7 +62,7 @@ def app(tmp_path, monkeypatch, transport):
     monkeypatch.setattr(router_mod, "classify", functools.partial(router_mod.classify, transport=transport))
     BriefRouter.calls, BriefRouter.route, BriefRouter.fail = 0, "chat", False
     settings = Settings(data_dir=tmp_path, router_enabled=True, router_backend="classifier",
-                        router_classifier_url=URL, experimental_routes=frozenset({"image"}))
+                        router_classifier_url=URL, enabled_routes=frozenset({"image"}))
     up = FakeUpstream()
     return TestClient(create_app(Deps(settings, upstream=up, model=lambda n: BriefRouter(),
                                       image_backend=AvailableImageBackend()))), settings, started

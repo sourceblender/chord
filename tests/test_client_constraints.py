@@ -88,7 +88,7 @@ def client(tmp_path, monkeypatch, route):
     for cap in ("image", "search", "audio"):
         monkeypatch.setitem(specialists.SPECIALISTS, cap, spy)
     settings = Settings(data_dir=tmp_path, router_enabled=True,
-                        experimental_routes=frozenset({"image", "search", "audio"}))
+                        enabled_routes=frozenset({"image", "search", "audio"}))
     up = ObedientUpstream()
     return TestClient(create_app(Deps(settings, upstream=up, model=lambda n: router_for(route)(),
                                       image_backend=AvailableImageBackend()))), up, settings, calls

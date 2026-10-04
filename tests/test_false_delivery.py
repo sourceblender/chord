@@ -45,7 +45,7 @@ def app(tmp_path, monkeypatch, reply, status=Outcome.needs_clarification, router
     async def image(job, ctx):
         return Result(job_id=job.job_id, revision=job.revision, status=status, question=Q, summary="no render")
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
-    settings = Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset(routes))
+    settings = Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset(routes))
     return TestClient(create_app(Deps(settings, upstream=Saying(reply), model=lambda n: router(),
                                       image_backend=AvailableImageBackend() if "image" in routes else None))), settings
 
@@ -111,7 +111,7 @@ def test_a_completed_picture_is_not_guarded(tmp_path, monkeypatch):
         d = ctx.artifacts.register(PNG, "image/png")
         return Result(job_id=job.job_id, revision=job.revision, status=Outcome.completed, artifacts=[d], summary="Ava")
     monkeypatch.setitem(specialists.SPECIALISTS, "image", made)
-    settings = Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset({"image"}))
+    settings = Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset({"image"}))
     c = TestClient(create_app(Deps(settings, upstream=Saying("Here you go — Ava at the gym."),
                                    model=lambda n: FixedRouter(), image_backend=AvailableImageBackend())))
     text, _ = ask(c, False)
@@ -172,7 +172,7 @@ def test_held_reply_is_the_same_whatever_the_chunking(tmp_path, monkeypatch, siz
     async def image(job, ctx):
         return Result(job_id=job.job_id, revision=job.revision, status=Outcome.needs_clarification, question=Q)
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
-    settings = Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset({"image"}))
+    settings = Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset({"image"}))
     c = TestClient(create_app(Deps(settings, upstream=Chunked(reply), model=lambda n: FixedRouter(),
                                    image_backend=AvailableImageBackend())))
     text, parts = ask(c, True)

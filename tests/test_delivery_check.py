@@ -55,7 +55,7 @@ def run(tmp_path, monkeypatch, reply, verdict, stream, status=Outcome.failed):
             yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}, {}
 
     model = Model(verdict)
-    deps = Deps(Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset({"image"})),
+    deps = Deps(Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset({"image"})),
                 upstream=Voice(), model=lambda n: model)
     client = TestClient(create_app(deps))
     body = {"model": "chord-1-poly", "stream": stream, "messages": [{"role": "user", "content": "draw a mug"}]}
@@ -105,7 +105,7 @@ def test_a_completed_turn_is_never_checked(tmp_path, monkeypatch):
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
     model = Model(True)
     client = TestClient(create_app(Deps(Settings(data_dir=tmp_path, router_enabled=True,
-                                                 experimental_routes=frozenset({"image"})), upstream=FakeUpstream(),
+                                                 enabled_routes=frozenset({"image"})), upstream=FakeUpstream(),
                                       model=lambda n: model, image_backend=AvailableImageBackend())))
     client.post("/v1/chat/completions", json={"model": "chord-1-poly", "messages": [{"role": "user", "content": "draw a mug"}]})
     assert model.checked == []

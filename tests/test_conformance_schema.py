@@ -554,7 +554,7 @@ def test_real_image_stream_passes_strict(tmp_path, monkeypatch):
         return Result(job_id=job.job_id, revision=job.revision, status=Outcome.completed, artifacts=[d], summary="a mug")
 
     monkeypatch.setitem(specialists.SPECIALISTS, "image", fake_image)
-    settings = Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset({"image"}))
+    settings = Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset({"image"}))
     chunks = tp.stream_chunks(TestClient(create_app(Deps(settings, upstream=tp.FakeUpstream(),
                                                           model=lambda n: tp.FixedRouter(),
                                                           image_backend=AvailableImageBackend()))))

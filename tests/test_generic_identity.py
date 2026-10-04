@@ -85,7 +85,7 @@ def can(base: str) -> str:
 
 
 def test_she_is_told_she_can_make_pictures_only_when_this_request_can(tmp_path, monkeypatch):
-    on = dict(router_enabled=True, experimental_routes=frozenset({"image"}))
+    on = dict(router_enabled=True, enabled_routes=frozenset({"image"}))
     assert "make pictures" in can(base_for(tmp_path / "a", monkeypatch, **on))
     assert "make pictures" not in can(base_for(tmp_path / "b", monkeypatch))                             # router off
     tools = {"model": "chord-1-poly", "tools": [{"type": "function", "function": {"name": "f", "parameters": {"type": "object"}}}],
@@ -102,7 +102,7 @@ def test_she_is_told_she_can_make_pictures_only_when_this_request_can(tmp_path, 
 
 def test_an_image_ask_the_request_does_not_offer_is_unavailable_not_silent_chat(tmp_path, monkeypatch):
     base = base_for(tmp_path, monkeypatch, path="/v1/responses", body={"model": "chord-1-poly", "input": "a mug please"},
-                    router_enabled=True, experimental_routes=frozenset({"image"}))
+                    router_enabled=True, enabled_routes=frozenset({"image"}))
     assert "you can't make pictures" in base and "Nothing is being sent" in base
 
 

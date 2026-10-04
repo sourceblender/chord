@@ -12,7 +12,7 @@ through `ctx.artifacts.register(...)`, and the returned descriptor goes in
 
 Register the callable in `SPECIALISTS` under its registry id (registry.yaml).
 Registration makes it *invokable* on the internal eval path. It becomes
-*routable* from the public alias only once registry.yaml certifies it.
+*routable* from the public alias once the operator enables it (enabled_routes).
 """
 
 from __future__ import annotations

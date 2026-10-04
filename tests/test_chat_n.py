@@ -49,7 +49,7 @@ def test_n_turns_are_never_routed_to_a_specialist(tmp_path, monkeypatch):
             class R: content = '{"route": "image", "intent": "a mug"}'
             return R()
 
-    deps, client, _ = make(tmp_path, Varied(), router=Router, router_enabled=True, experimental_routes=frozenset({"image"}))
+    deps, client, _ = make(tmp_path, Varied(), router=Router, router_enabled=True, enabled_routes=frozenset({"image"}))
     r = client.post("/v1/chat/completions", json={"model": MODEL, "messages": [{"role": "user", "content": "make me a mug picture"}],
                                                   "n": 2, "temperature": 1})
     assert r.status_code == 200 and ran == [] and len(r.json()["choices"]) == 2

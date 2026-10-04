@@ -624,8 +624,8 @@ def build(
 
     def reachable(state: TurnState) -> frozenset:
         """Specialist capabilities this request can actually reach: the router
-        runs for it, the capability is routable or experimental, and (Responses)
-        the request offers it as a tool."""
+        runs for it, the operator enabled the capability (image: configured a
+        workflow), and (Responses) the request offers it as a tool."""
         params = state["params"]
         if (
             not settings.router_enabled
@@ -637,7 +637,7 @@ def build(
             c.id
             for c in capabilities.values()
             if (c.id == "image" and image_backend is not None)
-            or (c.id != "image" and (c.routable or c.id in settings.experimental_routes))
+            or (c.id != "image" and c.id in settings.enabled_routes)
         )
         allowed = state.get("allowed_routes")
         return caps & allowed if allowed is not None else caps
@@ -1430,14 +1430,14 @@ def build(
             trace.set(route_unavailable=decision.route, route_not_registered=decision.route)
             return {"unavailable": decision.route, "result": None}
         run = SPECIALISTS.get(cap.id)
-        experimental = not cap.routable and cap.id in settings.experimental_routes
+        enabled = cap.id in settings.enabled_routes
         standard_web_search = bool(
             state.get("forced_search")
             and cap.id == "search"
             and manifest.load()["features"]["web_search"]
         )
         configured_image = cap.id == "image" and image_backend is not None
-        available = configured_image if cap.id == "image" else (cap.routable or experimental or standard_web_search)
+        available = configured_image if cap.id == "image" else (enabled or standard_web_search)
         if not available or run is None:
             trace.set(
                 route_unavailable=cap.id,
@@ -1457,7 +1457,7 @@ def build(
             # spec-shaped way to send one, so the assistant says so (2026-09-16).
             trace.set(route_unavailable=cap.id, reason="audio_output_not_requested")
             return {"unavailable": cap.id, "result": None}
-        if experimental and not standard_web_search:
+        if enabled and not cap.routable and not standard_web_search:  # enabled without a test record: labelled, not refused
             trace.set(experimental_route=cap.id)
         job = Job(
             job_id=str(ULID()),

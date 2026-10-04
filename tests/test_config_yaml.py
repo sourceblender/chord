@@ -161,7 +161,7 @@ routing:
     assert settings.stt_model == settings.tts_model == settings.embeddings_model == ""
     with pytest.raises(ValueError, match="no configured backend"):
         settings.base_url_for("unconfigured-model")
-    assert settings.experimental_routes == frozenset()
+    assert settings.enabled_routes == frozenset()
     body = {"reasoning_effort": "low"}
     assert thinking_switch(body, settings.persona_thinking_mode) == {"reasoning_effort": "low"}
 

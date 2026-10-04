@@ -16,7 +16,7 @@ class Counting(FakeUpstream):
 
 def test_the_count_is_the_models_and_the_prefill_is_one_token(tmp_path):
     deps, client, sdk = make(tmp_path, Counting(), router=lambda: (_ for _ in ()).throw(AssertionError("router ran")),
-                             router_enabled=True, experimental_routes=frozenset({"image"}))
+                             router_enabled=True, enabled_routes=frozenset({"image"}))
     r = client.post("/v1/responses/input_tokens", json={"model": MODEL, "input": "hello", "instructions": "Be brief.",
                                                           "tools": [{"type": "image_generation"}]})
     assert r.status_code == 200, r.text

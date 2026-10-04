@@ -68,7 +68,7 @@ def test_a_routed_image_turn_is_strict_and_the_image_arrives_as_markdown(tmp_pat
 
     monkeypatch.setitem(specialists.SPECIALISTS, "image", fake_image)
     settings = Settings(data_dir=tmp_path, router_enabled=True,
-                        experimental_routes=frozenset({"image"}))
+                        enabled_routes=frozenset({"image"}))
     client = TestClient(create_app(Deps(settings, upstream=FakeUpstream(), model=lambda n: FixedRouter(),
                                         image_backend=AvailableImageBackend())))
     r = chat(client, stream)

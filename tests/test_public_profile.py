@@ -58,7 +58,7 @@ def last_trace(settings: Settings) -> dict:
 def test_the_public_profile_is_the_one_under_test(public) -> None:
     assert manifest.load()["release"] == "text-only"
     assert all(cap.model == "none" and not cap.routable for cap in registry.load().values())
-    assert public.experimental_routes == frozenset()
+    assert public.enabled_routes == frozenset()
 
 
 @pytest.mark.parametrize("route", ["image", "search", "audio", "video"])

@@ -57,7 +57,7 @@ def image_app(tmp_path, monkeypatch):
         return Result(job_id=job.job_id, revision=job.revision, status=Outcome.completed,
                       artifacts=[ctx.artifacts.register(PNG, "image/png")], summary="a mug")
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
-    settings = Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset({"image"}))
+    settings = Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset({"image"}))
     return create_app(Deps(settings, upstream=FakeUpstream(), model=lambda n: FixedRouter(),
                            image_backend=AvailableImageBackend()))
 

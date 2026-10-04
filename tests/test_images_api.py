@@ -26,7 +26,7 @@ def client_for(tmp_path, monkeypatch, specialist, routes=frozenset({"image"})):
     if specialist is not None:
         monkeypatch.setitem(specialists.SPECIALISTS, "image", specialist)
     up = FakeUpstream()
-    settings = Settings(data_dir=tmp_path, experimental_routes=routes)
+    settings = Settings(data_dir=tmp_path, enabled_routes=routes)
     return TestClient(create_app(Deps(settings, upstream=up, model=lambda n: None))), up, settings
 
 
@@ -52,7 +52,7 @@ def configured_comfy_client(tmp_path, monkeypatch, png: bytes, **settings_over):
     settings = Settings(
         data_dir=tmp_path, image_comfy_base_url="http://localhost:8188",
         image_workflow=ImageWorkflowConfig(workflow, tmp_path, "6", "9"),
-        experimental_routes=frozenset(),
+        enabled_routes=frozenset(),
         **settings_over,
     )
     calls = []
@@ -293,7 +293,7 @@ def test_a_named_image_model_we_do_not_serve_is_still_a_404(tmp_path, monkeypatc
 def _plain_client(tmp_path, monkeypatch, **settings_over):
     monkeypatch.setitem(specialists.SPECIALISTS, "image", rendered())
     settings = Settings(data_dir=tmp_path,
-                        experimental_routes=frozenset({"image"}), service_api_key="k", **settings_over)
+                        enabled_routes=frozenset({"image"}), service_api_key="k", **settings_over)
     return TestClient(create_app(Deps(settings, upstream=FakeUpstream(), model=lambda n: None)))
 
 
