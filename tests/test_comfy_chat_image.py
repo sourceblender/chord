@@ -51,7 +51,7 @@ def _png() -> bytes:
 
 def test_experimental_image_route_without_a_provider_is_unavailable(tmp_path):
     settings = Settings(data_dir=tmp_path, router_enabled=True,
-                        experimental_routes=frozenset({"image"}))
+                        enabled_routes=frozenset({"image"}))
     upstream = FakeUpstream()
     deps = Deps(settings, upstream=upstream, model=lambda _: ImageRouter())
     response = TestClient(create_app(deps)).post("/v1/chat/completions", json={
@@ -81,7 +81,7 @@ def test_configured_chat_image_uses_generic_workflow(
         "9": {"class_type": "SaveImage", "inputs": {"images": ["8", 0]}},
     }))
     settings = Settings(
-        data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset(),
+        data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset(),
         image_comfy_base_url="http://localhost:8188",
         image_workflow=ImageWorkflowConfig(workflow, tmp_path, "6", "9"),
     )

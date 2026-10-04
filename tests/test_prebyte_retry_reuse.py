@@ -86,7 +86,7 @@ def _client(tmp_path, monkeypatch, route: str, up):
     load_specialists()
     monkeypatch.setitem(specialists.SPECIALISTS, route, fake_specialist)
     settings = Settings(data_dir=tmp_path, router_enabled=True,
-                        experimental_routes=frozenset({route}))
+                        enabled_routes=frozenset({route}))
     deps = Deps(settings, upstream=up, model=lambda name: router)
     return TestClient(create_app(deps)), router, runs, deps
 

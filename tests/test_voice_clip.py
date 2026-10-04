@@ -42,7 +42,7 @@ class Replying(SpeakingUpstream):
 
 def app(tmp_path):
     settings = Settings(data_dir=tmp_path, router_enabled=True,
-                        experimental_routes=frozenset({"audio"}))
+                        enabled_routes=frozenset({"audio"}))
     up = Replying()
     return TestClient(create_app(Deps(settings, upstream=up, model=lambda n: AudioRouter()))), up, settings
 

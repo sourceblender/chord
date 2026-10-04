@@ -51,7 +51,7 @@ def test_endpoint_filters_only_completed_image_captions(tmp_path, monkeypatch, s
                 yield {"choices": [{"index": 0, "delta": {"content": char}}]}, {}
             yield {"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}, {}
     settings = Settings(data_dir=tmp_path, router_enabled=image_turn,
-                        experimental_routes=frozenset({"image"}))
+                        enabled_routes=frozenset({"image"}))
     client = TestClient(create_app(Deps(settings, upstream=Voice(), model=lambda _: FixedRouter(),
                                         image_backend=AvailableImageBackend())))
     r = client.post("/v1/chat/completions", json={"model": "chord-1-poly", "stream": stream,

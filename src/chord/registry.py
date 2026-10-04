@@ -1,8 +1,8 @@
 """Capability registry: which capabilities exist and which have earned routing.
 
-A capability is routable only when its `certified` block names the exact model
-and prompt version currently configured. Change either one and it stops being
-routable until it is certified again. That's deliberate.
+An optional `certified` block records that someone tested a capability with an
+exact model and prompt version. It is evidence for claims, reported as-is; it
+never decides whether a route runs. The operator enables routes in config.
 """
 
 from __future__ import annotations

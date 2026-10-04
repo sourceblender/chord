@@ -49,7 +49,7 @@ def create_app(deps: InternalDeps) -> FastAPI:
             "personas": graph_mod.available_personas(),
             "router_enabled": deps.settings.router_enabled,
             "specialists": deps.specialists,
-            "experimental_routes": sorted(deps.settings.experimental_routes),
+            "enabled_routes": sorted(deps.settings.enabled_routes),
             "capabilities": {
                 "input": {"image": bool(manifest.load()["input"]["image"])},
                 "output": {"image": configured_image,

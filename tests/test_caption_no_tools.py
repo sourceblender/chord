@@ -71,7 +71,7 @@ def client(tmp_path, monkeypatch, status=Outcome.completed, router_enabled=True,
 
     monkeypatch.setitem(specialists.SPECIALISTS, "image", render)
     settings = Settings(data_dir=tmp_path, router_enabled=router_enabled,
-                        experimental_routes=frozenset({"image"}))
+                        enabled_routes=frozenset({"image"}))
     up = voice or Voice()
     return TestClient(create_app(Deps(settings, upstream=up, model=lambda _: FixedRouter(),
                                       image_backend=AvailableImageBackend()))), up, settings, renders

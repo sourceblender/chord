@@ -60,7 +60,7 @@ def app(tmp_path, monkeypatch, route):
     for cap in ("image", "search", "audio"):
         monkeypatch.setitem(specialists.SPECIALISTS, cap, specialist)
     settings = Settings(data_dir=tmp_path, router_enabled=True,
-                        experimental_routes=frozenset({"image", "search", "audio"}))
+                        enabled_routes=frozenset({"image", "search", "audio"}))
     up = Calling()
     return TestClient(create_app(Deps(settings, upstream=up, model=lambda n: router_for(route)(),
                                       image_backend=AvailableImageBackend()))), up, settings, ran
@@ -131,7 +131,7 @@ def test_tool_choice_none_forwards_no_tools_and_is_still_never_routed(tmp_path, 
 
     up = FakeUpstream()
     client = TestClient(create_app(Deps(Settings(data_dir=tmp_path, router_enabled=True,
-                                                 experimental_routes=frozenset({"search", "image"})), upstream=up, model=lambda n: Router())))
+                                                 enabled_routes=frozenset({"search", "image"})), upstream=up, model=lambda n: Router())))
     body = {"model": "chord-1-poly", "messages": [{"role": "user", "content": "weather in Paris?"}],
             "tools": [{"type": "function", "function": {"name": "get_weather", "parameters": {"type": "object"}}}], **extra}
     if "functions" in extra:

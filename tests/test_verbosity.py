@@ -76,7 +76,7 @@ def test_the_service_line_goes_before_a_turn_note(tmp_path, monkeypatch):
                       artifacts=[ctx.artifacts.register(PNG, "image/png")], summary="a cat on a chair")
 
     monkeypatch.setitem(specialists.SPECIALISTS, "image", render)
-    settings = Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset({"image"}))
+    settings = Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset({"image"}))
     up = FakeUpstream()
     client = TestClient(create_app(Deps(settings, upstream=up, model=lambda n: FixedRouter())))
     r = client.post("/v1/chat/completions", json={"model": "chord-1-poly", "verbosity": "high",

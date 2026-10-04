@@ -180,7 +180,7 @@ def app(tmp_path, monkeypatch, hits, backend="brave", upstream=None, experimenta
         return backend, hits, []
     monkeypatch.setattr(S, "search", fake_search)
     settings = Settings(data_dir=tmp_path, router_enabled=True,
-                        experimental_routes=frozenset({"search"}) if experimental else frozenset())
+                        enabled_routes=frozenset({"search"}) if experimental else frozenset())
     up = upstream or FakeUpstream()
     model = lambda n: SearchRouter() if n == settings.router_model else QueryModel()
     return TestClient(create_app(Deps(settings, upstream=up, model=model))), up, settings, fake_search

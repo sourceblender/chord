@@ -51,7 +51,7 @@ def app(tmp_path, monkeypatch, router):
 
     monkeypatch.setitem(specialists.SPECIALISTS, "image", image)
     settings = Settings(data_dir=tmp_path, router_enabled=True,
-                        experimental_routes=frozenset({"image"}))
+                        enabled_routes=frozenset({"image"}))
     up = FakeUpstream()
     return TestClient(create_app(Deps(settings, upstream=up, model=lambda n: router(),
                                      image_backend=AvailableImageBackend()))), up, settings, renders

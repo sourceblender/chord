@@ -578,7 +578,7 @@ def test_experimental_image_route_returns_the_image_as_markdown_in_her_reply(tmp
             return R()
 
     def client_with(routes):
-        settings = Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset(routes))
+        settings = Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset(routes))
         deps = Deps(settings, upstream=FakeUpstream(), model=lambda n: FixedRouter(),
                     image_backend=AvailableImageBackend() if "image" in routes else None)
         return TestClient(create_app(deps))
@@ -666,7 +666,7 @@ def test_streamed_image_is_markdown_after_her_words_before_the_finish(tmp_path, 
             class R: content = '{"route": "image", "intent": "a mug"}'
             return R()
 
-    settings = Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset({"image"}))
+    settings = Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset({"image"}))
     client = TestClient(create_app(Deps(settings, upstream=FakeUpstream(), model=lambda n: FixedRouter(),
                                        image_backend=AvailableImageBackend())))
     with client.stream("POST", "/v1/chat/completions", json={"model": "chord-1-poly", "stream": True, "messages": [{"role": "user", "content": "draw a mug"}]}) as r:
@@ -698,7 +698,7 @@ def test_a_signed_image_link_loads_without_the_key_and_nothing_else_does(tmp_pat
             class R: content = '{"route": "image", "intent": "a mug"}'
             return R()
 
-    settings = Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset({"image"}),
+    settings = Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset({"image"}),
                         service_api_key="s3cret", public_artifact_base="https://chord.example/",
                         artifact_signing_key="separate-artifact-signing-key-for-tests")
     client = TestClient(create_app(Deps(settings, upstream=FakeUpstream(), model=lambda n: FixedRouter(),
@@ -790,7 +790,7 @@ def test_streamed_reasoning_is_dropped_unless_thinking_is_turned_on(tmp_path, op
 def test_internal_health_carries_the_deploy_detail_on_loopback(tmp_path):
     deps, _ = make(tmp_path)
     body = TestClient(create_internal_app(deps)).get("/internal/health").json()
-    assert {"revision", "router_enabled", "experimental_routes", "specialists"} <= set(body)
+    assert {"revision", "router_enabled", "enabled_routes", "specialists"} <= set(body)
     assert body["personas"] == ["generic"]
     assert "girls" not in body
 

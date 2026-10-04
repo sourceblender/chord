@@ -31,9 +31,29 @@ Video generation requires operator-provided `ffmpeg` and `ffprobe` executables o
 
 `chord.yaml` uses version 1. Its named endpoints specify a type, URL, model, and optional backend features. `routing.chat` and `routing.router` may select different endpoints. Endpoint settings such as `thinking: qwen_chat_template` and `json_mode: true` should be enabled only when the backend supports them; the default is portable passthrough. `python -m chord --check-config` validates the file without contacting a backend, and `--show-config` prints resolved routes without credentials. Lane routing can use the router model or your own HTTP classifier; see [Router backends](docs/architecture.md#router-backends).
 
-`CHORD_MANIFEST` and `CHORD_REGISTRY` can select reviewed overlays for additional capabilities. Client keys, storage, and bind addresses are environment settings. A separate proxy may front Chord as a client routing choice; Chord does not require one.
+`CHORD_MANIFEST` and `CHORD_REGISTRY` can select overlays for additional capabilities. Client keys, storage, and bind addresses are environment settings. A separate proxy may front Chord as a client routing choice; Chord does not require one.
 
 For embeddings, `EMBEDDINGS_BASE_URL` accepts either the service root or a URL ending in `/v1`. Chord sends the request to `/v1/embeddings` once in either case.
+
+### Turning on specialist routes
+
+Chat needs nothing extra. Search, audio and video are specialist routes: Chord's router can hand a turn to them once
+you turn them on and give them a backend. Pictures turn on by configuring an image workflow (next section).
+
+```yaml
+routing:
+  chat: {endpoint: chat}
+  router: {endpoint: chat}
+enabled_routes: [search]
+```
+
+Without `CHORD_CONFIG`, the same list is the `ENABLED_ROUTES` environment setting (`ENABLED_ROUTES=search,audio`;
+`EXPERIMENTAL_ROUTES` is the earlier name and still works). A name Chord doesn't know stops startup. Each route still
+needs its backend: search uses Brave when `BRAVE_API_KEY` is set and falls back to DuckDuckGo, audio needs a `tts`
+endpoint, and the router must be on (`ROUTER_ENABLED=true`). `/internal/health` lists what is enabled.
+
+A capability in the registry may carry a `certified` record (who tested which model and prompt version, and when).
+It is reported for reference and never turns a route on or off.
 
 ### ComfyUI workflows
 

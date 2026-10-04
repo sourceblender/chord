@@ -159,7 +159,7 @@ def test_a_completed_picture_turn_is_not_touched_by_the_fake_filter(tmp_path, mo
         return Result(job_id=job.job_id, revision=job.revision, status=Outcome.completed, artifacts=[d], summary="a mug")
 
     monkeypatch.setitem(specialists.SPECIALISTS, "image", made)
-    settings = Settings(data_dir=tmp_path, router_enabled=True, experimental_routes=frozenset({"image"}))
+    settings = Settings(data_dir=tmp_path, router_enabled=True, enabled_routes=frozenset({"image"}))
     TestClient(create_app(Deps(settings, upstream=FakeUpstream(), model=lambda n: FixedRouter(),
                                image_backend=AvailableImageBackend()))).post(
         "/v1/chat/completions", json={"model": "chord-1-poly", "messages": [{"role": "user", "content": "draw a mug"}]})
@@ -176,7 +176,7 @@ def test_a_video_ask_is_said_plainly_unavailable_not_made_into_a_picture(tmp_pat
     """2026-09-13: "make me a video" routed to image and made a still. Video
     is out of scope, so the ask is named and answered honestly (#90)."""
     settings = Settings(data_dir=tmp_path, router_enabled=True,
-                        experimental_routes=frozenset({"image"}))
+                        enabled_routes=frozenset({"image"}))
     up = FakeUpstream()
     TestClient(create_app(Deps(settings, upstream=up, model=lambda n: VideoRouter()))).post(
         "/v1/chat/completions", json={"model": "chord-1-poly",

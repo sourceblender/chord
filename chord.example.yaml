@@ -16,3 +16,5 @@ endpoints:
 routing:
   chat: {endpoint: chat}
   router: {endpoint: chat}
+# Specialist routes to turn on (search, audio, video); see the README.
+# enabled_routes: [search]
