@@ -7,7 +7,9 @@ import pytest
 from chord.config import Settings
 from chord.contract import Job
 from chord.specialists import SpecialistContext
-from chord.specialists.image import write_prompt
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
+from chord.specialists.image import PROMPT_ONLY, PROMPT_WRITER, write_prompt
 from chord.trace import Trace
 
 
@@ -63,9 +65,17 @@ def test_the_chat_model_writes_the_prompt_from_the_whole_request():
     c, names = ctx(m)
     prompt, source = run(write_prompt(LONG, c))
     assert (prompt, source) == ("A watercolour of a red fire truck with a dented ladder, outdoors", "chat_model")
-    sent = m.seen[1].content
-    # Detail from more than eight messages back, and system/developer text, reach the writer.
-    assert "dented ladder" in sent and "Pictures are watercolour" in sent and "Keep scenes outdoors" in sent
+    system, rest = m.seen[0], m.seen[1:]
+    # Instructions keep their authority: folded into the one system message, never a user turn.
+    assert isinstance(system, SystemMessage)
+    assert system.content.startswith(PROMPT_WRITER) and system.content.rstrip().endswith(PROMPT_ONLY)
+    assert "Pictures are watercolour" in system.content
+    assert "Developer instruction" in system.content and "Keep scenes outdoors" in system.content
+    assert not any("watercolour" in x.content or "outdoors" in x.content for x in rest)
+    # Detail from more than eight messages back reaches the writer as conversation.
+    assert any(isinstance(x, HumanMessage) and "dented ladder" in x.content for x in rest)
+    assert isinstance(rest[-1], HumanMessage) and rest[-1].content == "Create that picture now."
+    assert any(isinstance(x, AIMessage) for x in rest)
     assert names == ["chat-model"] and c.trace.fields["image_prompt_model"] == "chat-model"
     assert m.bound == {"extra_body": {"chat_template_kwargs": {"enable_thinking": False}}}
 
@@ -126,3 +136,15 @@ def test_quotes_and_fences_around_a_prompt_are_removed():
     assert run(write_prompt(LONG, c))[0] == "a red fire truck at dusk"
     c, _ = ctx(Model(lambda: Reply("```\na red fire truck at dusk\n```")))
     assert run(write_prompt(LONG, c))[0] == "a red fire truck at dusk"
+
+
+def test_an_over_long_reply_falls_back_instead_of_being_cut():
+    import json as _json
+    long_json = _json.dumps({"route": "image", "intent": "x" * 4480})      # > limit, valid JSON
+    assert len(long_json) > 4000
+    c, _ = ctx(Model(lambda: Reply(long_json)))
+    assert run(write_prompt(LONG, c)) == ("Create that picture now.", "user_words_fallback")
+    assert c.trace.fields["image_prompt_error"] == "PromptTooLong"
+    c, _ = ctx(Model(lambda: Reply("a red fire truck, " * 330)))             # ~5900 plain chars
+    assert run(write_prompt(LONG, c)) == ("Create that picture now.", "user_words_fallback")
+    assert c.trace.fields["image_prompt_error"] == "PromptTooLong"

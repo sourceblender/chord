@@ -8,7 +8,7 @@ from PIL import Image
 import asyncio
 import json
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
 from ..contract import Job, Outcome, Result
 from . import SpecialistContext, specialist
@@ -23,11 +23,31 @@ PROMPT_WRITER = (
     "makes the picture concrete. Reply with the prompt text only: no preamble, no quotes, no markdown, no "
     "explanation."
 )
-PROMPT_MAX_CHARS = 4000
+PROMPT_ONLY = "Reply now with only the image prompt for the user's latest request."
+PROMPT_MAX_CHARS = 4000  # longer replies are refused (fallback), never cut: a cut can hide JSON or markup
 
 
-def _transcript(conversation: list[dict]) -> str:
-    return "\n\n".join(f"{m.get('role', 'user')}: {m.get('text', '')}" for m in conversation if m.get("text"))
+class PromptTooLong(ValueError):
+    pass
+
+
+def _messages(conversation: list[dict]) -> list:
+    """The request as the chat model normally sees it. graph.layered folds every
+    system/developer instruction into the single leading system message with its
+    authority label intact (never demoted to a user turn); the writer's own
+    instruction is the base and the prompt-only rule is the closing note."""
+    from ..graph import layered  # deferred: graph imports the specialists
+
+    folded = layered(PROMPT_WRITER, [{"role": m.get("role", "user"), "content": m.get("text", "")}
+                                     for m in conversation], note=PROMPT_ONLY)
+    out = []
+    for m in folded:
+        text = m["content"] if isinstance(m["content"], str) else "".join(
+            p.get("text", "") for p in m["content"] if p.get("type") == "text")
+        role = m.get("role")
+        out.append(SystemMessage(text) if role == "system" else AIMessage(text) if role == "assistant"
+                   else HumanMessage(text))
+    return out
 
 
 def _last_user_text(job: Job) -> str:
@@ -40,6 +60,8 @@ def _usable(reply) -> str:
     if getattr(reply, "tool_calls", None) or getattr(reply, "invalid_tool_calls", None):
         return ""
     text = _clean(reply.content if isinstance(getattr(reply, "content", None), str) else "")
+    if len(text) > PROMPT_MAX_CHARS:
+        raise PromptTooLong(f"{len(text)} characters")
     if "<tool_call>" in text or "</tool_call>" in text or '"tool_calls"' in text:
         return ""
     if text.startswith(("{", "[")):
@@ -57,7 +79,7 @@ def _clean(text: str) -> str:
         text = text.strip("`").split("\n", 1)[-1].strip()
     if len(text) >= 2 and text[0] == text[-1] and text[0] in "\"'":
         text = text[1:-1].strip()
-    return text[:PROMPT_MAX_CHARS]
+    return text
 
 
 async def write_prompt(job: Job, ctx: SpecialistContext) -> tuple[str, str]:
@@ -71,7 +93,7 @@ async def write_prompt(job: Job, ctx: SpecialistContext) -> tuple[str, str]:
         if ctx.settings.persona_thinking_mode == "qwen_chat_template" and hasattr(llm, "bind"):
             llm = llm.bind(extra_body={"chat_template_kwargs": {"enable_thinking": False}})
         reply = await asyncio.wait_for(
-            llm.ainvoke([SystemMessage(PROMPT_WRITER), HumanMessage(_transcript(job.conversation))]),
+            llm.ainvoke(_messages(job.conversation)),
             ctx.settings.image_prompt_timeout_s,
         )
         text = _usable(reply)
