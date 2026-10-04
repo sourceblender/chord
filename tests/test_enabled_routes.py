@@ -55,6 +55,12 @@ def test_env_enabled_routes_and_the_earlier_name(monkeypatch) -> None:
     assert Settings().enabled_routes == frozenset({"search", "audio"})
 
 
+def test_an_explicitly_empty_enabled_routes_disables_the_earlier_name(monkeypatch) -> None:
+    monkeypatch.setenv("EXPERIMENTAL_ROUTES", "search,audio")
+    monkeypatch.setenv("ENABLED_ROUTES", "")
+    assert Settings().enabled_routes == frozenset()
+
+
 @pytest.mark.parametrize("source", ["yaml", "env"])
 def test_an_unknown_route_fails_startup_in_either_mode(tmp_path, monkeypatch, source) -> None:
     if source == "yaml":

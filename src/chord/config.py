@@ -736,8 +736,9 @@ class Settings:
     # `certified` record is reported, never required. Image is enabled by
     # configuring an image workflow. EXPERIMENTAL_ROUTES is the earlier name.
     enabled_routes: frozenset = field(default_factory=lambda: frozenset(
-        r.strip() for r in (_env("ENABLED_ROUTES", "") or _env("EXPERIMENTAL_ROUTES", "")).split(",")
-        if r.strip()))
+        r.strip() for r in (_env("ENABLED_ROUTES") if "ENABLED_ROUTES" in os.environ
+                            else _env("EXPERIMENTAL_ROUTES", "")).split(",")
+        if r.strip()))  # an explicitly empty ENABLED_ROUTES enables nothing
     # The http(s) hosts a chat image_url part may name (review 2026-09-22, #7).
     # The persona BACKEND fetches image_url parts itself, from its own position
     # on the VLAN, so every http URL a caller can name is a fetch primitive
