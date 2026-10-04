@@ -1,12 +1,12 @@
 # Chord
 
-Chord serves an OpenAI-compatible API through one model name, `chord-1-poly`. Its text profile sends chat to an operator-chosen backend. Optional image, audio, search, and video routes need their own services and certification; the bundled configuration does not advertise them as ready.
+Chord serves an OpenAI-compatible API through one model name, `chord-1-poly`. Its text profile sends chat to an operator-chosen backend. Optional image, audio, search, and video routes need their own services, and you turn each one on in your configuration; the bundled configuration does not advertise them as ready.
 
-Chord is currently a single-tenant service: one installation is one trust boundary for stored data. The [configuration example](chord.example.yaml), [architecture](docs/architecture.md), [pinned API spec](qa/conformance/spec/README.md), and [source manifest](src/chord/manifest.yaml) are the starting points for running and extending it. The manifest says what a configured instance advertises; `GET /health` reports its actual revision to a caller with a valid key.
+Chord is currently a single-tenant service: one installation is one trust boundary for stored data. The [configuration guide](docs/configure.md), [configuration example](chord.example.yaml), [architecture](docs/architecture.md), [pinned API spec](qa/conformance/spec/README.md), and [source manifest](src/chord/manifest.yaml) are the starting points for running and extending it. The manifest says what a configured instance advertises; `GET /health` reports its actual revision to a caller with a valid key.
 
 ## Text-only quickstart
 
-You need [uv](https://docs.astral.sh/uv/), network access to PyPI for the first install, Python 3.12 (which uv can fetch), and an OpenAI-compatible chat endpoint running first. The example assumes Ollama at `http://127.0.0.1:11434/v1` with a `llama3.1` model. Change the URL and model in `chord.yaml` to match your server. Other backends may need different thinking and JSON settings; validate the configuration before serving traffic. No image, audio, search, or ComfyUI service is needed for this profile.
+You need [uv](https://docs.astral.sh/uv/), network access to PyPI for the first install, Python 3.12 (which uv can fetch), and an OpenAI-compatible chat endpoint running first. The example assumes Ollama at `http://127.0.0.1:11434/v1` with a `llama3.1` model. Change the URL and model in `chord.yaml` to match your server. Other backends may need different thinking and JSON settings; validate the configuration before serving traffic. No image, audio, search, or ComfyUI service is needed for this profile. [Configure Chord](docs/configure.md) explains every choice, from this one-model file to a full install.
 
 ```sh
 cp chord.example.yaml chord.yaml
@@ -29,7 +29,9 @@ Video generation requires operator-provided `ffmpeg` and `ffprobe` executables o
 
 ## Configuration
 
-`chord.yaml` uses version 1. Its named endpoints specify a type, URL, model, and optional backend features. `routing.chat` and `routing.router` may select different endpoints. Endpoint settings such as `thinking: qwen_chat_template` and `json_mode: true` should be enabled only when the backend supports them; the default is portable passthrough. `python -m chord --check-config` validates the file without contacting a backend, and `--show-config` prints resolved routes without credentials. Lane routing can use the router model or your own HTTP classifier; see [Router backends](docs/architecture.md#router-backends).
+**Start with [Configure Chord](docs/configure.md).** `chord.yaml` version 2 names each job: `routing.chat` is the main model and the only one required; `routing.helper` (small writing jobs) and `routing.fast` (replies to `service_tier: fast`/`priority`) are optional and each default to the main model on its own; the `dispatch` block chooses who picks a lane (`classifier`, `helper` or `none`, the default). Endpoint settings such as `thinking: qwen_chat_template` and `json_mode: true` should be enabled only when the backend supports them; the default is portable passthrough. `python -m chord --check-config` validates the file without contacting a backend, and `--show-config` prints which model writes what, with defaults marked, and no credentials. For the HTTP classifier contract, see [Router backends](docs/architecture.md#router-backends).
+
+Version 1 files (and files with no version) still load exactly as before: there, `routing.router` is the small writer and also answers the fast tier, and dispatch comes from the `ROUTER_*` environment settings. Each version refuses the other's names, so a file is never half one and half the other.
 
 `CHORD_MANIFEST` and `CHORD_REGISTRY` can select overlays for additional capabilities. Client keys, storage, and bind addresses are environment settings. A separate proxy may front Chord as a client routing choice; Chord does not require one.
 
@@ -41,23 +43,26 @@ Chat needs nothing extra. Search, audio and video are specialist routes: Chord's
 you turn them on and give them a backend. Pictures turn on by configuring an image workflow (next section).
 
 ```yaml
+version: 2
 routing:
-  chat: {endpoint: chat}
-  router: {endpoint: chat}
+  chat: {endpoint: main}
+dispatch: {by: helper}
 enabled_routes: [search]
 ```
 
 Without `CHORD_CONFIG`, the same list is the `ENABLED_ROUTES` environment setting (`ENABLED_ROUTES=search,audio`;
 `EXPERIMENTAL_ROUTES` is the earlier name and still works). A name Chord doesn't know stops startup. Each route still
 needs its backend: search uses Brave when `BRAVE_API_KEY` is set and falls back to DuckDuckGo, audio needs a `tts`
-endpoint, and the router must be on (`ROUTER_ENABLED=true`). `/internal/health` lists what is enabled.
+endpoint, and something must pick lanes (`dispatch.by: helper` or `classifier`; `ROUTER_ENABLED=true` for an
+environment or version 1 install). `/internal/health` lists what is enabled.
 
 A capability in the registry may carry a `certified` record (who tested which model and prompt version, and when).
 It is reported for reference and never turns a route on or off.
 
 ### Who writes an image prompt
 
-In chat (`/v1/chat/completions`) and Responses, the chat model you are talking to writes the image prompt. When a
+In chat (`/v1/chat/completions`) and Responses, the chat model you are talking to writes the image prompt (on a
+`service_tier: fast`/`priority` request, that is the fast model). When a
 turn is routed to the image lane, Chord asks the chat model serving that request for a render prompt, as a plain-text
 reply drawn from the whole conversation, and submits that text to your workflow unchanged. It makes no tool call. If
 that request fails, takes longer than `IMAGE_PROMPT_TIMEOUT_S` (default 60 seconds), or returns no usable prompt (empty, longer than

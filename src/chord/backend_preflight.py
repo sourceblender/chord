@@ -53,22 +53,46 @@ def check(settings: Settings, client: httpx.Client) -> list[str]:
             failures.append(name)
             return None
 
-    for name, model, base in (
-        ("persona", settings.persona_model, settings.persona_base_url),
-        ("router", settings.router_model, settings.router_base_url),
-    ):
+    # Each text writer once per distinct target: the same address can serve
+    # different models, or the same model behind different credentials, and each
+    # of those is checked. A writer that shares a target with an earlier one
+    # shares its result, so the names reported are the same as probing both.
+    writers = [("persona", settings.persona_model, settings.persona_base_url),
+               ("router", settings.router_model, settings.router_base_url)]
+    if settings.fast_model and settings.fast_base_url:  # version 2 names its own fast writer
+        writers.append(("fast", settings.fast_model, settings.fast_base_url))
+    probed: dict[tuple[str, str, str], bool] = {}
+    for name, model, base in writers:
         if not base:
             failures.append(name)
             continue
         key = settings.credential_for(base)
-        response = request(
-            name, base.rstrip("/") + "/chat/completions",
-            auth=f"Bearer {key}" if key else "",
-            json={"model": model, "messages": [{"role": "user", "content": "Reply OK"}],
-                  "max_tokens": 8, "stream": False},
-        )
-        if response is not None and not _json_ok(response, "choices"):
+        target = (base.rstrip("/"), model, key)
+        if target not in probed:
+            response = request(
+                name, base.rstrip("/") + "/chat/completions",
+                auth=f"Bearer {key}" if key else "",
+                json={"model": model, "messages": [{"role": "user", "content": "Reply OK"}],
+                      "max_tokens": 8, "stream": False},
+            )
+            probed[target] = response is not None and _json_ok(response, "choices")
+            if response is not None and not probed[target]:
+                failures.append(name)
+        elif not probed[target] and name not in failures:
             failures.append(name)
+
+    # A version 2 classifier dispatcher gets a lane request, never a chat one:
+    # it returns a lane name and cannot write.
+    if settings.config_version == 2 and settings.router_enabled and settings.router_backend == "classifier":
+        from .router import CLASSIFIER_ROUTES
+        response = request("classifier", settings.router_classifier_url, json={"text": "user: Reply OK"})
+        try:
+            valid = (response is not None and response.status_code == 200
+                     and response.json().get("route") in CLASSIFIER_ROUTES)
+        except (ValueError, AttributeError):
+            valid = False
+        if response is not None and not valid:
+            failures.append("classifier")
 
     if settings.stt_base_url:
         key = settings.credential_for(settings.stt_base_url)

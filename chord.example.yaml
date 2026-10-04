@@ -1,20 +1,20 @@
 # Copy to chord.yaml and set CHORD_CONFIG=./chord.yaml. Validate with
-# `python -m chord --check-config`, or inspect selected routes with
+# `python -m chord --check-config`, and see who writes what with
 # `python -m chord --show-config` (URL origins only; credentials omitted).
-# Server settings (ports, storage and client keys) remain environment
-# variables for now.
-# This example uses one OpenAI-compatible backend for text chat and routing.
-version: 1
+# docs/configure.md explains every choice. Server settings (ports, storage
+# and client keys) remain environment variables for now.
+# One OpenAI-compatible model does everything here: normal chat, the small
+# helper jobs and fast/priority replies. No dispatcher: every turn is chat.
+version: 2
 endpoints:
-  chat:
+  main:
     type: openai-chat
     url: http://127.0.0.1:11434/v1
     model: llama3.1
     auth: null
-    thinking: passthrough
-    json_mode: false
 routing:
-  chat: {endpoint: chat}
-  router: {endpoint: chat}
-# Specialist routes to turn on (search, audio, video); see the README.
+  chat: {endpoint: main}
+# Optional, each defaults to chat: helper: {endpoint: ...}, fast: {endpoint: ...}
+# Pick lanes (needed for search, audio, video, and pictures from chat):
+# dispatch: {by: helper}
 # enabled_routes: [search]

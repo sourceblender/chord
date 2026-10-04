@@ -75,8 +75,50 @@ def effective_config_view(settings: Settings, *, yaml_mode: bool) -> dict:
                                       10 if settings.image_variation_workflow.seed_node_id else 1)},
     }
     routes["chat"]["thinking"] = settings.persona_thinking_mode
-    return {"mode": "yaml-v1" if yaml_mode else "legacy-environment",
-            "router_enabled": settings.router_enabled, "routes": routes}
+    version = settings.config_version if yaml_mode else 0
+    return {"mode": f"yaml-v{version}" if yaml_mode else "legacy-environment",
+            "router_enabled": settings.router_enabled, "routes": routes,
+            "writers": writers_view(settings, version, origin)}
+
+
+def writers_view(settings: Settings, version: int, origin) -> dict:
+    """Who writes what, and who picks the lane, in plain role names.
+
+    An operator answers "which model does X" here without the manifest or the
+    legacy `router` name. A role that was not set says which role it inherits."""
+    def writer(model: str, url: str, how: str) -> dict:
+        return {"model": model or None, "origin": origin(url), "source": how}
+
+    main_target = (settings.persona_model, settings.persona_base_url.rstrip("/"))
+    helper_same = (settings.router_model, settings.router_base_url.rstrip("/")) == main_target
+    fast_model, fast_url = settings.slot_target("fast") if settings.router_base_url else ("", "")
+    if version == 2:
+        helper_how = "set" if settings.helper_explicit else "default: same as main"
+        fast_how = "set" if settings.fast_explicit else "default: same as main"
+    else:
+        helper_how = "routing.router (version 1)" if version == 1 else "ROUTER_MODEL (environment)"
+        fast_how = "same as helper (version 1 and environment installs)"
+    by = ("none" if not settings.router_enabled else
+          "classifier" if settings.router_backend == "classifier" else "helper")
+    search_cap = registry.load().get("search")
+    search = ("helper" if version == 2 else
+              f"registry search model ({search_cap.model})" if search_cap else "no search route in the registry")
+    return {
+        "main": {**writer(settings.persona_model, settings.persona_base_url, "routing.chat"),
+                 "writes": "every ordinary reply; the image prompt in chat"},
+        "helper": {**writer(settings.router_model, settings.router_base_url, helper_how),
+                   "same_target_as_main": helper_same,
+                   "writes": ("the web-search query, " if version == 2 else "")
+                             + "specialist briefs, the false-delivery check, and the lane choice when dispatch is "
+                               "helper or the classifier is unavailable"},
+        "fast": {**writer(fast_model, fast_url, fast_how),
+                 "writes": "the whole reply, and the image prompt, when a client sends service_tier fast or priority"},
+        "search_query": search,
+        "dispatch": {"by": by,
+                     "classifier_origin": origin(settings.router_classifier_url) if by == "classifier" else None,
+                     "on_classifier_failure": "helper picks the lane" if by == "classifier" else None,
+                     "source": "yaml dispatch block" if version == 2 else "environment (ROUTER_ENABLED, ROUTER_BACKEND)"},
+    }
 
 
 async def main(settings: Settings | None = None) -> None:

@@ -760,7 +760,7 @@ def build(
             # prefill, its usage.prompt_tokens exact for this template and base.
             body.pop("max_tokens", None)
             body["max_completion_tokens"] = 1
-        body = thinking_switch(backend_tool_choice(body), settings.persona_thinking_mode)
+        body = thinking_switch(backend_tool_choice(body), settings.reply_thinking_mode(persona_model))
         # A forced call the backend didn't make is repaired through a JSON schema (#216):
         # the normal tool path runs first, and only a reply WITHOUT the required call gets
         # the second, constrained pass, in place of the 502 it used to become.

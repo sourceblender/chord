@@ -1199,7 +1199,7 @@ def register(app: FastAPI, deps, stored: ResponseStore) -> None:
             image_backend=deps.image_backend,
         )
         route = manifest.load()["service_tier_routes"].get(body.get("service_tier") or "")
-        persona_model = deps.settings.slot_target(route["slot"])[0] if route else None
+        persona_model = deps.settings.tier_model(route["slot"]) if route else None
         # Every accepted request: the service owns verbosity, omitted included.
         trace.set(verbosity_requested=body.get("verbosity"), verbosity_effective=body.get("verbosity") or "medium",
                   verbosity_handled_by="service")

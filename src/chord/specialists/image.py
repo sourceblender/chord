@@ -90,7 +90,7 @@ async def write_prompt(job: Job, ctx: SpecialistContext) -> tuple[str, str]:
     model_id = ctx.persona_model or ctx.settings.persona_model
     try:
         llm = ctx.model(model_id)
-        if ctx.settings.persona_thinking_mode == "qwen_chat_template" and hasattr(llm, "bind"):
+        if ctx.settings.reply_thinking_mode(model_id) == "qwen_chat_template" and hasattr(llm, "bind"):
             llm = llm.bind(extra_body={"chat_template_kwargs": {"enable_thinking": False}})
         reply = await asyncio.wait_for(
             llm.ainvoke(_messages(job.conversation)),

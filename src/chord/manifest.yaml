@@ -58,9 +58,9 @@ service_tier_routes:
     slot: persona
     echo: default
   fast:
-    slot: router
+    slot: fast
     echo: priority
   priority:
-    slot: router
+    slot: fast
     echo: priority
 response_extensions: []
