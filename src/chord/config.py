@@ -405,7 +405,7 @@ class Settings:
             helper_explicit=helper_key in routing,
             **({"fast_model": fast["model"], "fast_base_url": fast["url"], "fast_api_key": fast["auth"],
                 "fast_thinking_mode": fast["thinking"], "fast_explicit": "fast" in routing,
-                **dispatch} if version == 2 else {}),
+                **(dispatch or {})} if version == 2 else {}),
             stt_model=stt["model"] if stt else "", stt_base_url=stt["url"] if stt else "",
             stt_api_key=stt["auth"] if stt else "",
             tts_model=tts["model"] if tts else "", tts_base_url=tts["url"] if tts else "",
