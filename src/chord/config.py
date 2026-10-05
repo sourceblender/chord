@@ -113,6 +113,39 @@ def _positive_finite(value: float) -> bool:
             and math.isfinite(value) and value > 0)
 
 
+# Manifest service-tier slots. `router` is the pre-version-2 spelling of `fast`.
+TIER_SLOTS = frozenset({"persona", "fast", "router"})
+
+
+def _dispatch(spec: object, interpolate) -> dict:
+    """A version 2 `dispatch` block as Settings fields. Absent means nobody picks a
+    lane: every turn is chat. The environment's ROUTER_ENABLED, ROUTER_BACKEND and
+    ROUTER_CLASSIFIER_* never apply to a version 2 file."""
+    off = {"router_enabled": False, "router_backend": "llm", "router_classifier_url": "",
+           "router_classifier_timeout_s": 1.0}
+    if spec is None:
+        return off
+    if not isinstance(spec, dict) or "by" not in spec or set(spec) - {"by", "classifier_url", "classifier_timeout_s"}:
+        raise ConfigurationError("dispatch needs by, and may set classifier_url and classifier_timeout_s")
+    by = spec["by"]
+    if by not in ("classifier", "helper", "none"):
+        raise ConfigurationError("dispatch.by must be classifier, helper or none")
+    if by != "classifier" and set(spec) - {"by"}:
+        raise ConfigurationError("dispatch.classifier_url and classifier_timeout_s need by: classifier")
+    if by == "none":
+        return off
+    if by == "helper":
+        return {**off, "router_enabled": True}
+    if "classifier_url" not in spec:
+        raise ConfigurationError("dispatch.by: classifier needs classifier_url")
+    url = interpolate(spec["classifier_url"], "dispatch.classifier_url")
+    timeout = spec.get("classifier_timeout_s", 1.0)
+    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not _positive_finite(float(timeout)):
+        raise ConfigurationError("dispatch.classifier_timeout_s must be greater than zero and finite")
+    return {"router_enabled": True, "router_backend": "classifier", "router_classifier_url": url,
+            "router_classifier_timeout_s": float(timeout)}
+
+
 @dataclass(frozen=True)
 class Settings:
     @classmethod
@@ -134,15 +167,15 @@ class Settings:
             location = f" at line {mark.line + 1}, column {mark.column + 1}" if mark else ""
             raise ConfigurationError(f"CHORD_CONFIG {path} is invalid YAML{location}") from None
         if not isinstance(raw, dict) or set(raw) - {"version", "endpoints", "routing", "image_workflows_dir",
-                                                      "enabled_routes"}:
+                                                      "enabled_routes", "dispatch"}:
             raise ConfigurationError(
-                "CHORD_CONFIG supports version, endpoints, routing, image_workflows_dir and enabled_routes")
+                "CHORD_CONFIG supports version, endpoints, routing, dispatch, image_workflows_dir and enabled_routes")
         enabled = raw.get("enabled_routes", [])
         if not isinstance(enabled, list) or not all(isinstance(r, str) and r.strip() for r in enabled):
             raise ConfigurationError("enabled_routes must be a list of route names")
         version = raw.get("version", 1)  # versionless files from #379 are v1
-        if type(version) is not int or version != 1:
-            raise ConfigurationError("CHORD_CONFIG version must be 1")
+        if type(version) is not int or version not in (1, 2):
+            raise ConfigurationError("CHORD_CONFIG version must be 1 or 2")
         endpoints = raw.get("endpoints")
         routing = raw.get("routing", {})
         if not isinstance(endpoints, dict) or not isinstance(routing, dict):
@@ -210,14 +243,29 @@ class Settings:
                 raise ConfigurationError(f"routing.{route} cannot use endpoint type {endpoint['type']!r}")
             return endpoint
 
-        if set(routing) - {"chat", "router", "stt", "tts", "embeddings", "video", "image",
-                           "image_edit", "image_variation"}:
+        # One form per file (contract: docs/configure.md). Version 1 is the original
+        # form, loaded exactly as before: `router` is the helper and also answers the
+        # fast tier, and dispatch comes from the environment. Version 2 names each job:
+        # `helper` and `fast` each default to `chat` on their own, and dispatch is the
+        # file's `dispatch` block. Neither form accepts the other's names.
+        writers = {"chat", "router"} if version == 1 else {"chat", "helper", "fast"}
+        for name in ({"helper", "fast"} if version == 1 else {"router"}) & set(routing):
+            raise ConfigurationError(f"routing.{name} needs version: 2" if version == 1 else
+                                     "routing.router is the version 1 name; version 2 uses routing.helper")
+        if version == 1 and "dispatch" in raw:
+            raise ConfigurationError("dispatch needs version: 2")
+        if set(routing) - writers - {"stt", "tts", "embeddings", "video", "image",
+                                     "image_edit", "image_variation"}:
             raise ConfigurationError("routing has unsupported route names")
         chat = selected("chat", "chat", {"openai-chat"})
         chat_name = routing.get("chat", {"endpoint": "chat"})["endpoint"]
-        router = selected("router", chat_name, {"openai-chat"})
-        if chat is None or router is None:
-            raise ConfigurationError("chat and router routes must have endpoints")
+        helper_key = "router" if version == 1 else "helper"
+        router = selected(helper_key, chat_name, {"openai-chat"})
+        fast = selected("fast", chat_name, {"openai-chat"}) if version == 2 else router
+        if chat is None or router is None or fast is None:
+            raise ConfigurationError(f"chat and {helper_key} routes must have endpoints"
+                                     if version == 1 else "chat, helper and fast routes must have endpoints")
+        dispatch = _dispatch(raw.get("dispatch"), interpolate) if version == 2 else None
         stt = selected("stt", "stt", {"openai-audio"}) if "stt" in routing or "stt" in resolved else None
         tts = selected("tts", "tts", {"openai-audio"}) if "tts" in routing or "tts" in resolved else None
         embeddings = (selected("embeddings", "embeddings", {"openai-embeddings", "tei-embeddings"})
@@ -353,6 +401,11 @@ class Settings:
             persona_thinking_mode=chat["thinking"],
             router_model=router["model"], router_base_url=router["url"], router_api_key=router["auth"],
             router_thinking_mode=router["thinking"], router_json_mode=router["json_mode"],
+            config_version=version,
+            helper_explicit=helper_key in routing,
+            **({"fast_model": fast["model"], "fast_base_url": fast["url"], "fast_api_key": fast["auth"],
+                "fast_thinking_mode": fast["thinking"], "fast_explicit": "fast" in routing,
+                **(dispatch or {})} if version == 2 else {}),
             stt_model=stt["model"] if stt else "", stt_base_url=stt["url"] if stt else "",
             stt_api_key=stt["auth"] if stt else "",
             tts_model=tts["model"] if tts else "", tts_base_url=tts["url"] if tts else "",
@@ -412,21 +465,27 @@ class Settings:
         if self.legacy_artifact_verify_until and not (self.artifact_signing_key and self.service_api_key):
             errors.append("CHORD_LEGACY_ARTIFACT_VERIFY_UNTIL needs both signing and legacy keys")
 
-        for slot in ("persona", "router"):
+        from . import manifest  # deferred like registry above
+        bad = sorted({str(r.get("slot")) for r in manifest.load()["service_tier_routes"].values()} - TIER_SLOTS)
+        if bad:
+            errors.append(f"manifest service_tier_routes has unknown slots: {', '.join(bad)}; "
+                          f"expected {', '.join(sorted(TIER_SLOTS))}")
+        for slot in ("persona", "router", "fast"):
             try:
                 self.slot_target(slot)
             except ValueError as exc:
                 errors.append(str(exc))
-        if (self.persona_model and self.persona_model == self.router_model
-                and self.persona_base_url and self.router_base_url
-                and self.persona_base_url.rstrip("/") != self.router_base_url.rstrip("/")):
-            errors.append(
-                f"chat model {self.persona_model!r} cannot identify two different direct routes"
-            )
+        seen: dict[str, str] = {}
+        for model, url in ((self.persona_model, self.persona_base_url), (self.router_model, self.router_base_url),
+                           (self.fast_model, self.fast_base_url)):
+            if model and url and seen.setdefault(model, url.rstrip("/")) != url.rstrip("/"):
+                errors.append(f"chat model {model!r} cannot identify two different direct routes")
+                break
 
         urls = {
             "PERSONA_BASE_URL": self.persona_base_url,
             "ROUTER_BASE_URL": self.router_base_url,
+            "routing.fast endpoint": self.fast_base_url,
             "ROUTER_CLASSIFIER_URL": self.router_classifier_url,
             "STT_BASE_URL": self.stt_base_url,
             "TTS_BASE_URL": self.tts_base_url,
@@ -462,7 +521,8 @@ class Settings:
         if self.router_backend not in {"llm", "classifier"}:
             errors.append("ROUTER_BACKEND must be llm or classifier")
         for name, mode in (("PERSONA_THINKING_MODE", self.persona_thinking_mode),
-                           ("ROUTER_THINKING_MODE", self.router_thinking_mode)):
+                           ("ROUTER_THINKING_MODE", self.router_thinking_mode),
+                           *((("routing.fast thinking", self.fast_thinking_mode),) if self.fast_thinking_mode else ())):
             if mode not in {"passthrough", "qwen_chat_template"}:
                 errors.append(f"{name} must be passthrough or qwen_chat_template")
         if self.router_backend == "classifier" and not self.router_classifier_url:
@@ -569,6 +629,7 @@ class Settings:
         targets = {
             "persona": (self.persona_model, self.persona_base_url),
             "router": (self.router_model, self.router_base_url),
+            "fast": (self.fast_model or self.router_model, self.fast_base_url or self.router_base_url),
         }
         if slot not in targets:
             raise ValueError(f"unknown chat slot {slot!r}; expected one of {sorted(targets)}")
@@ -576,6 +637,24 @@ class Settings:
         if not model.strip() or not base_url.strip():
             raise ValueError(f"chat slot {slot!r} requires a nonblank model and direct base URL")
         return model, base_url
+
+    def tier_model(self, slot: str) -> str:
+        """The model a manifest service tier selects. `fast` is the fast writer; a
+        manifest written before version 2 says `router` for the same thing."""
+        if slot not in TIER_SLOTS:
+            raise ValueError(f"service tier slot {slot!r}; expected one of {sorted(TIER_SLOTS)}")
+        return self.slot_target("persona" if slot == "persona" else "fast")[0]
+
+    def tier_thinking_mode(self, slot: str | None) -> str:
+        """The thinking mode for a reply the tier `slot` selected (None: no tier).
+
+        Decided by the role that was selected, never by model name: main and fast
+        may be the same model at the same address with different settings. In a
+        version 2 config the fast endpoint owns its own; everywhere else every reply
+        uses the persona's, as before."""
+        if self.config_version == 2 and slot in ("fast", "router") and self.fast_thinking_mode:
+            return self.fast_thinking_mode
+        return self.persona_thinking_mode
 
     def base_url_for(self, model: str) -> str:
         """The explicitly configured endpoint that serves `model`.
@@ -587,6 +666,8 @@ class Settings:
             return self.persona_base_url
         if model == self.router_model and self.router_base_url:
             return self.router_base_url
+        if model == self.fast_model and self.fast_base_url:
+            return self.fast_base_url
         if model == self.stt_model and self.stt_base_url:
             return self.stt_base_url
         if model == self.tts_model and self.tts_base_url:
@@ -607,6 +688,7 @@ class Settings:
         url = base_url.rstrip("/")
         matched = {key for configured, key in ((self.persona_base_url, self.persona_api_key),
                                                (self.router_base_url, self.router_api_key),
+                                               (self.fast_base_url, self.fast_api_key),
                                                (self.stt_base_url, self.stt_api_key),
                                                (self.tts_base_url, self.tts_api_key))
                    if configured and configured.rstrip("/") == url}
@@ -660,6 +742,19 @@ class Settings:
     # backend -- not an empty bearer, no header. The key follows the URL.
 
     persona_api_key: str = field(default_factory=lambda: _env("PERSONA_API_KEY", ""))
+    # Version 2 config only (no environment variables). The model that answers a
+    # `service_tier: fast`/`priority` turn and writes that turn's image prompt.
+    # Blank means the router model, which is the version 1 and env-only behaviour;
+    # a blank thinking mode means persona_thinking_mode, also as before.
+    fast_model: str = ""
+    fast_base_url: str = ""
+    fast_api_key: str = ""
+    fast_thinking_mode: str = ""
+    # 0: env-only install; 1 or 2: the CHORD_CONFIG form. Role policy that
+    # differs by form (search query writer, endpoint-owned thinking) reads this.
+    config_version: int = 0
+    helper_explicit: bool = False
+    fast_explicit: bool = False
     router_api_key: str = field(default_factory=lambda: _env("ROUTER_API_KEY", ""))
     stt_api_key: str = field(default_factory=lambda: _env("STT_API_KEY", ""))
     tts_api_key: str = field(default_factory=lambda: _env("TTS_API_KEY", ""))

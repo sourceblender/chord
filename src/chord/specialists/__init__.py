@@ -48,6 +48,8 @@ class SpecialistContext:
     # included). In chat, it is the model the user is talking to, so it writes
     # the render prompt for the image lane.
     persona_model: str = ""
+    # Its thinking mode, chosen by the role that selected it (blank: the persona's).
+    reply_thinking: str = ""
 
 
 Specialist = Callable[[Job, SpecialistContext], Awaitable[Result]]

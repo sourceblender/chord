@@ -177,8 +177,8 @@ def test_version_one_and_versionless_compatibility(tmp_path: Path) -> None:
     config = "endpoints: {chat: {type: openai-chat, url: http://localhost:11434/v1, model: example}}\n"
     assert Settings.from_yaml(write(tmp_path, "version: 1\n" + config)).persona_model == "example"
     assert Settings.from_yaml(write(tmp_path, config)).persona_model == "example"
-    for version in ("2", "true", "'1'"):
-        with pytest.raises(ConfigurationError, match="version must be 1"):
+    for version in ("3", "0", "true", "'1'", "'2'"):
+        with pytest.raises(ConfigurationError, match="version must be 1 or 2"):
             Settings.from_yaml(write(tmp_path, f"version: {version}\n" + config))
 
 

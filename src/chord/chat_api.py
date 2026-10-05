@@ -1199,7 +1199,13 @@ def register(app: FastAPI, deps, stored: ResponseStore) -> None:
             image_backend=deps.image_backend,
         )
         route = manifest.load()["service_tier_routes"].get(body.get("service_tier") or "")
-        persona_model = deps.settings.slot_target(route["slot"])[0] if route else None
+        persona_model = deps.settings.tier_model(route["slot"]) if route else None
+        reply_thinking = deps.settings.tier_thinking_mode(route["slot"] if route else None)
+        # Which role answered and where dispatch came from, so a fast/main pair that
+        # shares one model is still provable from the trace.
+        trace.set(dispatch_source="yaml" if deps.settings.config_version == 2 else "env")
+        if route and route["slot"] in ("fast", "router"):
+            trace.set(fast_model=persona_model, reply_thinking=reply_thinking)
         # Every accepted request: the service owns verbosity, omitted included.
         trace.set(verbosity_requested=body.get("verbosity"), verbosity_effective=body.get("verbosity") or "medium",
                   verbosity_handled_by="service")
@@ -1209,6 +1215,7 @@ def register(app: FastAPI, deps, stored: ResponseStore) -> None:
             "stream": stream,
             "verbosity": body.get("verbosity"),
             "persona_model": persona_model,
+            "reply_thinking": reply_thinking,
             "audio_output": wants_audio,
             "allowed_routes": allowed_routes,
             "count_only": bool(sink and sink.get("count_only")),
